@@ -41,10 +41,7 @@ class PolicyService:
         config = {
             "version": 1,
             "gateway_uuid": gateway_uuid,
-            "rules": [
-                {"pattern": p.pattern, "action": p.action, "type": p.type}
-                for p in policies
-            ],
+            "rules": [{"pattern": p.pattern, "action": p.action, "type": p.type} for p in policies],
         }
         signature = sign_config(config)
         return {"config": config, "signature": signature, "deployed": len(policies)}

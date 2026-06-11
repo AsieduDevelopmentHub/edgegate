@@ -4,7 +4,6 @@ import logging
 from datetime import datetime, timezone
 
 from fastapi import WebSocket
-from starlette.websockets import WebSocketDisconnect
 
 from app.v1.core.config import settings
 
@@ -36,11 +35,13 @@ class WebSocketHub:
             self.disconnect(ws)
 
     async def notify_event(self, event_type: str, data: dict) -> None:
-        await self.broadcast({
-            "type": "event",
-            "data": {"event_type": event_type, **data},
-            "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-        })
+        await self.broadcast(
+            {
+                "type": "event",
+                "data": {"event_type": event_type, **data},
+                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+            }
+        )
 
     async def start_broadcast_loop(self) -> None:
         if self._broadcast_task is None:
@@ -50,11 +51,13 @@ class WebSocketHub:
         while True:
             await asyncio.sleep(settings.ws_broadcast_interval_ms / 1000)
             if self.connections:
-                await self.broadcast({
-                    "type": "dashboard_update",
-                    "data": {"tick": True},
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                })
+                await self.broadcast(
+                    {
+                        "type": "dashboard_update",
+                        "data": {"tick": True},
+                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                    }
+                )
 
 
 ws_hub = WebSocketHub()

@@ -87,8 +87,12 @@ class DNSLog(Base):
 
     __table_args__ = (
         Index("ix_dns_logs_created_at", "created_at"),
-        Index("ix_dns_logs_domain_gin", "domain", postgresql_using="gin",
-              postgresql_ops={"domain": "gin_trgm_ops"}),
+        Index(
+            "ix_dns_logs_domain_gin",
+            "domain",
+            postgresql_using="gin",
+            postgresql_ops={"domain": "gin_trgm_ops"},
+        ),
     )
 
 

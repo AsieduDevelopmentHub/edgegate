@@ -19,7 +19,11 @@ class SessionRepository:
     async def end_active_session(self, device_id: int, gateway_id: int) -> Session | None:
         result = await self.session.execute(
             select(Session)
-            .where(Session.device_id == device_id, Session.gateway_id == gateway_id, Session.end.is_(None))
+            .where(
+                Session.device_id == device_id,
+                Session.gateway_id == gateway_id,
+                Session.end.is_(None),
+            )
             .order_by(Session.start.desc())
             .limit(1)
         )

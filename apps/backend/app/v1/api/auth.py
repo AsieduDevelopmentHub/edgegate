@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Header, HTTPException, status
 
 from app.security.jwt import create_gateway_token, rotate_gateway_token
 

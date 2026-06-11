@@ -7,7 +7,18 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from app.v1.api import auth, dashboard, devices, dns, events, gateways, policies, sessions, telemetry, websocket
+from app.v1.api import (
+    auth,
+    dashboard,
+    devices,
+    dns,
+    events,
+    gateways,
+    policies,
+    sessions,
+    telemetry,
+    websocket,
+)
 from app.v1.core.config import settings
 from app.v1.core.logging import setup_logging
 from app.v1.db.bootstrap import init_local_db

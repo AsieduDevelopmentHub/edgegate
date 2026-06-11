@@ -15,7 +15,35 @@ cd EdgeGate
 cp .env.example .env
 ```
 
-## 2. Start the Stack
+## 2. Start Locally (no Docker)
+
+**Backend** (uses SQLite — no PostgreSQL required):
+
+```bash
+cd apps/backend
+pip install aiosqlite greenlet
+# .env already configured for SQLite
+set PYTHONPATH=.          # Windows CMD
+$env:PYTHONPATH="."       # PowerShell
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+**Dashboard** (separate terminal):
+
+```bash
+cd apps/dashboard
+npm run dev
+```
+
+Or use the helper script:
+
+```powershell
+.\scripts\start-local.ps1
+```
+
+Open http://localhost:3000 (dashboard) and http://localhost:8000/docs (API).
+
+## 2b. Start with Docker (deployment)
 
 ```bash
 npm run docker:up

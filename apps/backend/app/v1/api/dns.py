@@ -21,15 +21,15 @@ async def list_dns(
     return {
         "items": [
             {
-                "id": l.id,
-                "device_id": l.device_id,
-                "domain": l.domain,
-                "resolved": l.resolved,
-                "blocked": l.blocked,
-                "latency_ms": l.latency_ms,
-                "created_at": l.created_at.isoformat(),
+                "id": log.id,
+                "device_id": log.device_id,
+                "domain": log.domain,
+                "resolved": log.resolved,
+                "blocked": log.blocked,
+                "latency_ms": log.latency_ms,
+                "created_at": log.created_at.isoformat(),
             }
-            for l in items
+            for log in items
         ],
         "next_cursor": next_cursor,
         "has_more": has_more,

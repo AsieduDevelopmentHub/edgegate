@@ -1,6 +1,6 @@
 import pytest
 
-from app.security.jwt import create_gateway_token, verify_gateway_token, rotate_gateway_token
+from app.security.jwt import create_gateway_token, rotate_gateway_token, verify_gateway_token
 
 
 def test_create_and_verify_token():

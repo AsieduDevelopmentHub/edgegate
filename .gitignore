@@ -44,3 +44,7 @@ test-results/
 # Misc
 *.db
 *.sqlite
+apps/backend/edgegate.db
+apps/backend/.env
+apps/backend/.pytest_cache/
+apps/backend/edgegate_backend.egg-info/

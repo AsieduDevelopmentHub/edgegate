@@ -38,6 +38,7 @@ class GatewayRepository:
 
     async def count_online(self) -> int:
         from sqlalchemy import func
+
         result = await self.session.execute(
             select(func.count()).select_from(Gateway).where(Gateway.status == "online")
         )

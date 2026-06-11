@@ -18,7 +18,9 @@ class DeviceRepository:
         result = await self.session.execute(select(Device).where(Device.id == device_id))
         return result.scalar_one_or_none()
 
-    async def upsert(self, mac: str, ip: str | None = None, connected: bool = True, rssi: int | None = None) -> Device:
+    async def upsert(
+        self, mac: str, ip: str | None = None, connected: bool = True, rssi: int | None = None
+    ) -> Device:
         device = await self.get_by_mac(mac)
         now = datetime.now(timezone.utc)
         if device:
@@ -29,7 +31,9 @@ class DeviceRepository:
             if rssi is not None:
                 device.rssi = rssi
         else:
-            device = Device(mac=mac, ip=ip, connected=connected, rssi=rssi, first_seen=now, last_seen=now)
+            device = Device(
+                mac=mac, ip=ip, connected=connected, rssi=rssi, first_seen=now, last_seen=now
+            )
             self.session.add(device)
         await self.session.flush()
         return device
@@ -43,6 +47,7 @@ class DeviceRepository:
 
     async def count_connected(self) -> int:
         from sqlalchemy import func
+
         result = await self.session.execute(
             select(func.count()).select_from(Device).where(Device.connected.is_(True))
         )
@@ -50,5 +55,6 @@ class DeviceRepository:
 
     async def count_total(self) -> int:
         from sqlalchemy import func
+
         result = await self.session.execute(select(func.count()).select_from(Device))
         return result.scalar() or 0

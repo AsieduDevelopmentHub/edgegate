@@ -13,9 +13,13 @@ async def require_gateway_auth(
     authorization: str | None = Header(default=None),
 ) -> str:
     if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing gateway token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing gateway token"
+        )
     token = authorization[7:]
     gateway_uuid = verify_gateway_token(token)
     if not gateway_uuid:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid gateway token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid gateway token"
+        )
     return gateway_uuid

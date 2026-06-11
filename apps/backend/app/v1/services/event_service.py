@@ -24,7 +24,7 @@ class EventService:
         self.policy_repo = PolicyRepository(session)
 
     async def ingest_batch(self, gateway_uuid: str, events: list[dict[str, Any]]) -> int:
-        gateway = await self.gateway_repo.get_or_create(gateway_uuid)
+        await self.gateway_repo.get_or_create(gateway_uuid)
         await self.gateway_repo.update_status(gateway_uuid, "online")
         accepted = 0
 
