@@ -44,6 +44,11 @@
 
 #define GATEWAY_JWT_MAX 384
 
+// Share STA internet with EdgeGate-AP clients (NAT + DNS forward)
+#ifndef EDGEGATE_AP_INTERNET
+#define EDGEGATE_AP_INTERNET 1
+#endif
+
 #define TELEMETRY_BATCH_SIZE 20
 #define TELEMETRY_FLUSH_MS 5000
 #define EVENT_BUFFER_CAPACITY 64

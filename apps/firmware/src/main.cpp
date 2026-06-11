@@ -108,19 +108,21 @@ static void fetchPolicies() {
     http.end();
 }
 
-static void handleDNSQuery(const char* domain, const char* device_mac) {
+static bool processDnsPolicy(const char* domain, const char* device_mac, bool* block_out) {
     uint64_t start = nowMs();
     PolicyAction action = policy_trie.evaluate(domain);
     uint64_t elapsed = nowMs() - start;
 
     char payload[128];
     if (action == POLICY_DENY) {
+        if (block_out) *block_out = true;
         snprintf(payload, sizeof(payload), "{\"domain\":\"%s\",\"blocked\":true}", domain);
         captureEvent(EVT_DOMAIN_BLOCKED, device_mac, payload, 2);
         snprintf(payload, sizeof(payload),
             "{\"rule\":\"%s\",\"action\":\"deny\",\"duration_ms\":%llu}", domain, elapsed);
         captureEvent(EVT_POLICY_HIT, device_mac, payload, 2);
     } else {
+        if (block_out) *block_out = false;
         snprintf(payload, sizeof(payload),
             "{\"domain\":\"%s\",\"blocked\":false,\"latency_ms\":%llu}", domain, elapsed);
         captureEvent(EVT_DNS_QUERY, device_mac, payload, 1);
@@ -129,6 +131,22 @@ static void handleDNSQuery(const char* domain, const char* device_mac) {
 
     DeviceState* dev = devices.find(device_mac);
     if (dev) dev->dns_count++;
+    return action == POLICY_DENY;
+}
+
+static void handleDNSQuery(const char* domain, const char* device_mac) {
+    processDnsPolicy(domain, device_mac, nullptr);
+}
+
+static void onDnsQuery(const char* domain, const IPAddress& client, bool* block) {
+    char device_mac[20];
+    if (last_client_mac[0] != '0' || last_client_mac[1] != ':') {
+        strncpy(device_mac, last_client_mac, sizeof(device_mac) - 1);
+    } else {
+        snprintf(device_mac, sizeof(device_mac), "IP:%s", client.toString().c_str());
+    }
+    device_mac[sizeof(device_mac) - 1] = '\0';
+    processDnsPolicy(domain, device_mac, block);
 }
 
 static void wifiTask(void* param) {
@@ -242,6 +260,7 @@ void setup() {
     policy_trie.addRule("malware.test", POLICY_DENY);
 
     wifi_mgr.setClientCallback(onApClient);
+    wifi_mgr.setDnsQueryCallback(onDnsQuery);
 
     if (!telemetry.hasToken()) {
         Serial.println("[auth] no JWT yet — will device-login when STA is up");
