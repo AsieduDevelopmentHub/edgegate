@@ -11,6 +11,7 @@
 #include "network/dns/dns_cache.h"
 #include "network/wifi/wifi_manager.h"
 #include "storage/nvs_store.h"
+#include "services/gateway_auth.h"
 #include "telemetry/telemetry_engine.h"
 #include "tasks/task_manager.h"
 
@@ -73,9 +74,9 @@ static void fetchPolicies() {
     if (!http.begin(url)) return;
 
     http.addHeader("Content-Type", "application/json");
-    if (strlen(GATEWAY_JWT_TOKEN) > 0) {
-        char auth[280];
-        snprintf(auth, sizeof(auth), "Bearer %s", GATEWAY_JWT_TOKEN);
+    if (telemetry.hasToken()) {
+        char auth[GATEWAY_JWT_MAX + 16];
+        snprintf(auth, sizeof(auth), "Bearer %s", telemetry.token());
         http.addHeader("Authorization", auth);
     }
 
@@ -150,6 +151,21 @@ static void dnsTask(void* param) {
     }
 }
 
+static void authTask(void* param) {
+    (void)param;
+    vTaskDelay(pdMS_TO_TICKS(3000));
+    char token[GATEWAY_JWT_MAX];
+
+    for (;;) {
+        if (wifi_mgr.staConnected() && !telemetry.hasToken()) {
+            if (gatewayFetchDeviceLogin(nvs_store, token, sizeof(token))) {
+                telemetry.setToken(token);
+            }
+        }
+        vTaskDelay(pdMS_TO_TICKS(10000));
+    }
+}
+
 static void policyTask(void* param) {
     (void)param;
     vTaskDelay(pdMS_TO_TICKS(5000));
@@ -211,7 +227,13 @@ void setup() {
 
     nvs_store.begin();
     telemetry.setEventId(nvs_store.loadEventId());
-    telemetry.setToken(GATEWAY_JWT_TOKEN);
+
+    char boot_token[GATEWAY_JWT_MAX];
+    if (gatewayResolveToken(nvs_store, boot_token, sizeof(boot_token))) {
+        telemetry.setToken(boot_token);
+        Serial.println("[auth] JWT loaded from NVS");
+    }
+
     task_mgr.begin();
 
     policy_trie.addRule("ads.example.com", POLICY_DENY);
@@ -219,8 +241,8 @@ void setup() {
 
     wifi_mgr.setClientCallback(onApClient);
 
-    if (strlen(GATEWAY_JWT_TOKEN) == 0) {
-        Serial.println("[config] GATEWAY_JWT_TOKEN empty — copy secrets.h.example to secrets.h");
+    if (!telemetry.hasToken()) {
+        Serial.println("[auth] no JWT yet — will device-login when STA is up");
     }
 
     if (!wifi_mgr.begin()) {
@@ -241,6 +263,7 @@ void setup() {
     captureEvent(EVT_GATEWAY_HEALTH, nullptr, "{\"status\":\"online\"}", 0);
 
     TaskManager::createTask(wifiTask, "wifi_task", 3072, 5, 0);
+    TaskManager::createTask(authTask, "auth_task", 4096, 4, 1);
     TaskManager::createTask(dnsTask, "dns_task", 3072, 4, 0);
     TaskManager::createTask(policyTask, "policy_task", 4096, 3, 0);
     TaskManager::createTask(telemetryTask, "telemetry_task", 4096, 3, 1);

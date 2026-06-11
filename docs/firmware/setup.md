@@ -41,13 +41,17 @@ pio device monitor         # serial monitor (115200 baud)
 
 In Cursor: **Ctrl+Shift+P** → **Tasks: Run Task** → **EdgeGate: Firmware Upload**
 
-## Obtain Gateway Token
+## Gateway JWT (automatic)
+
+On first STA connect, firmware calls `POST /v1/auth/device-login` with `gateway_uuid` / `gateway_name` and saves the returned JWT in NVS. Leave `GATEWAY_JWT_TOKEN` empty in `secrets.h`.
+
+Manual token (optional):
 
 ```bash
-curl -X POST "http://localhost:8000/v1/auth/token?gateway_uuid=00000000-0000-0000-0000-000000000001"
+curl -X POST "http://localhost:8000/v1/auth/device-login" \
+  -H "Content-Type: application/json" \
+  -d '{"gateway_uuid":"00000000-0000-0000-0000-000000000001","gateway_name":"edgegate-01"}'
 ```
-
-Copy the token into `GATEWAY_JWT_TOKEN` in `config.h` and rebuild.
 
 ## Wi-Fi Usage
 

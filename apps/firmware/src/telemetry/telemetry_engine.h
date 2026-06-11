@@ -13,9 +13,12 @@ public:
         : buffer_(buffer), batch_count_(0), last_flush_(0), event_id_(1), retry_delay_(1000) {}
 
     void setToken(const char* token) {
-        strncpy(token_, token, 255);
-        token_[255] = '\0';
+        strncpy(token_, token ? token : "", sizeof(token_) - 1);
+        token_[sizeof(token_) - 1] = '\0';
     }
+
+    bool hasToken() const { return token_[0] != '\0'; }
+    const char* token() const { return token_; }
 
     void setEventId(uint32_t id) { event_id_ = id; }
     uint32_t currentEventId() const { return event_id_; }
@@ -43,7 +46,7 @@ public:
         if (!token_[0]) {
             static unsigned long last_warn = 0;
             if (millis() - last_warn > 60000) {
-                Serial.println("[telemetry] GATEWAY_JWT_TOKEN missing — set in secrets.h");
+                Serial.println("[telemetry] no JWT — waiting for device-login");
                 last_warn = millis();
             }
             return;
@@ -79,7 +82,7 @@ public:
         http.begin(url);
         http.addHeader("Content-Type", "application/json");
         if (token_[0]) {
-            char auth[280];
+            char auth[GATEWAY_JWT_MAX + 16];
             snprintf(auth, sizeof(auth), "Bearer %s", token_);
             http.addHeader("Authorization", auth);
         }
@@ -106,5 +109,5 @@ private:
     uint64_t last_flush_;
     uint32_t event_id_;
     uint32_t retry_delay_;
-    char token_[256] = {0};
+    char token_[GATEWAY_JWT_MAX] = {0};
 };

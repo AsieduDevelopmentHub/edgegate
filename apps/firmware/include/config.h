@@ -14,7 +14,7 @@
 #endif
 
 #ifndef BACKEND_HOST
-#define BACKEND_HOST "192.168.1.202"
+#define BACKEND_HOST ""
 #endif
 
 #ifndef BACKEND_PORT
@@ -29,18 +29,20 @@
 #define WIFI_AP_PASSWORD "edgegate123"
 #endif
 
-// ESP32-C3 is 2.4 GHz only — use your router's 2.4 GHz SSID (not *_5G)
+// ESP32-C3 is 2.4 GHz only — set in secrets.h (not *_5G)
 #ifndef WIFI_STA_SSID
-#define WIFI_STA_SSID "MAXY.OT"
+#define WIFI_STA_SSID ""
 #endif
 
 #ifndef WIFI_STA_PASSWORD
-#define WIFI_STA_PASSWORD "asdfghjkl1987"
+#define WIFI_STA_PASSWORD ""
 #endif
 
 #ifndef GATEWAY_JWT_TOKEN
 #define GATEWAY_JWT_TOKEN ""
 #endif
+
+#define GATEWAY_JWT_MAX 384
 
 #define TELEMETRY_BATCH_SIZE 20
 #define TELEMETRY_FLUSH_MS 5000
