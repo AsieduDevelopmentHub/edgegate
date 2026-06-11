@@ -25,10 +25,12 @@ Edit `apps/firmware/include/config.h` or pass build flags in `platformio.ini`:
 
 ```bash
 cd apps/firmware
-pio run                    # compile
+pio run                    # compile (do NOT use "pio run -t build" — that target does not exist)
 pio run -t upload          # flash
-pio device monitor           # serial monitor (115200 baud)
+pio device monitor         # serial monitor (115200 baud)
 ```
+
+In Cursor: **Ctrl+Shift+P** → **Tasks: Run Task** → **EdgeGate: Firmware Build**
 
 ## Obtain Gateway Token
 

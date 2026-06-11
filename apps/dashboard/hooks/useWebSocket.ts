@@ -25,10 +25,12 @@ export function useWebSocket() {
       ws.onmessage = (msg) => {
         try {
           const data = JSON.parse(msg.data);
-          if (data.type === "event") {
-            recordEvent(data.data?.event_type || "unknown");
-          }
-          queryClient.invalidateQueries();
+          if (data.type !== "event") return;
+          recordEvent(data.data?.event_type || "unknown");
+          queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+          queryClient.invalidateQueries({ queryKey: ["devices"] });
+          queryClient.invalidateQueries({ queryKey: ["dns"] });
+          queryClient.invalidateQueries({ queryKey: ["policies"] });
         } catch {
           /* ignore */
         }

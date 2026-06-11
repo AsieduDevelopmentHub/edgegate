@@ -35,11 +35,11 @@ cd apps/dashboard
 npm run dev
 ```
 
-Or use the helper script:
+**Recommended — Cursor integrated terminals:**
 
-```powershell
-.\scripts\start-local.ps1
-```
+1. `Ctrl+Shift+P` → **Tasks: Run Task** → **EdgeGate: Dev Stack**
+
+This starts backend and dashboard in separate Cursor terminal panels.
 
 Open http://localhost:3000 (dashboard) and http://localhost:8000/docs (API).
 

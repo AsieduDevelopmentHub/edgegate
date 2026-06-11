@@ -11,7 +11,7 @@
     "dev:dashboard": "npm run dev --workspace=apps/dashboard",
     "build:dashboard": "npm run build --workspace=apps/dashboard",
     "lint": "npm run lint --workspaces --if-present",
-    "dev:backend": "cd apps/backend && set PYTHONPATH=.&& python -m uvicorn app.main:app --reload --port 8000",
+    "dev:backend": "npm run dev --prefix apps/backend",
     "dev:local": "powershell -File scripts/start-local.ps1",
     "docker:up": "docker compose -f infra/docker/docker-compose.yml up -d",
     "docker:down": "docker compose -f infra/docker/docker-compose.yml down",

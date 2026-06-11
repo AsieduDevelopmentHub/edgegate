@@ -5,7 +5,7 @@ const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 export const api = new EdgeGateClient(baseUrl);
 
 export async function fetchDashboard() {
-  const res = await fetch(`${baseUrl}/v1/dashboard`, { next: { revalidate: 5 } });
+  const res = await fetch(`${baseUrl}/v1/dashboard`, { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to fetch dashboard");
   return res.json();
 }

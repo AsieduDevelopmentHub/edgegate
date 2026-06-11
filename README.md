@@ -19,7 +19,21 @@ cp .env.example .env
 # Edit .env with your secrets and Wi-Fi credentials
 ```
 
-### 2. Start the stack
+### 2. Start locally (no Docker)
+
+In Cursor: `Ctrl+Shift+P` → **Tasks: Run Task** → **EdgeGate: Dev Stack**
+
+Or manually in two terminals:
+
+```bash
+# Terminal 1 — backend
+cd apps/backend && set PYTHONPATH=.&& python -m uvicorn app.main:app --reload --port 8000
+
+# Terminal 2 — dashboard
+cd apps/dashboard && npm run dev
+```
+
+### 2b. Start with Docker (deployment)
 
 ```bash
 npm run docker:up
