@@ -26,7 +26,9 @@ public:
 
         WiFi.mode(WIFI_AP);
         IPAddress ap_ip(192, 168, 4, 1);
-        WiFi.softAPConfig(ap_ip, ap_ip, IPAddress(255, 255, 255, 0));
+        IPAddress lease_start(192, 168, 4, 2);
+        WiFi.softAPConfig(ap_ip, ap_ip, IPAddress(255, 255, 255, 0), lease_start);
+        configureApDns(ap_ip);
 
         if (!WiFi.softAP(WIFI_AP_SSID, WIFI_AP_PASSWORD, 1, 0, 4)) {
             return false;
@@ -37,7 +39,6 @@ public:
             return false;
         }
 
-        configureApDns(ap_ip);
         sta_started_ = false;
         internet_enabled_ = false;
 
@@ -97,14 +98,23 @@ private:
 #if EDGEGATE_AP_INTERNET
         if (internet_enabled_ || !staConnected()) return;
 
-        IPAddress ap = WiFi.softAPIP();
         dns_forwarder_.setUpstream(WiFi.dnsIP());
 
+        IPAddress ap = WiFi.softAPIP();
         ip_napt_enable(static_cast<uint32_t>(ap), 1);
         internet_enabled_ = true;
-        Serial.println("[wifi] AP internet sharing ON (NAT + DNS forward)");
+        Serial.println("[wifi] AP internet sharing ON (NAPT + DNS forward)");
 #else
         Serial.println("[wifi] AP internet sharing disabled at build time");
+#endif
+    }
+
+    void disableInternetSharing() {
+#if EDGEGATE_AP_INTERNET
+        if (!internet_enabled_) return;
+        IPAddress ap = WiFi.softAPIP();
+        ip_napt_enable(static_cast<uint32_t>(ap), 0);
+        internet_enabled_ = false;
 #endif
     }
 
@@ -124,7 +134,7 @@ private:
                 WiFi.localIP().toString().c_str(), BACKEND_HOST, BACKEND_PORT);
             enableInternetSharing();
         } else if (event == ARDUINO_EVENT_WIFI_STA_DISCONNECTED) {
-            internet_enabled_ = false;
+            disableInternetSharing();
             Serial.printf("[wifi] STA down reason=%d\n", info.wifi_sta_disconnected.reason);
             if (info.wifi_sta_disconnected.reason == WIFI_REASON_NO_AP_FOUND) {
                 Serial.println("[wifi] Hint: use a 2.4 GHz network name/password");

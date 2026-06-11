@@ -65,7 +65,7 @@ curl -X POST "http://localhost:8000/v1/auth/device-login" \
 | Symptom | Likely cause |
 |---------|----------------|
 | Serial shows `sta=down` | Wrong Wi-Fi band (5 GHz SSID), bad password, or router hiding SSID |
-| Phone on EdgeGate-AP shows "no internet" | STA not connected yet, or DNS is intercepted for observation (not full ISP DNS) |
+| Phone on EdgeGate-AP shows "no internet" | STA not up yet, or firmware not flashed with AP internet sharing (needs STA + `[wifi] AP internet sharing ON` in serial) |
 | AP clients connect but dashboard empty | Empty `GATEWAY_JWT_TOKEN`, backend not running, or wrong `BACKEND_HOST` |
 | `[config] GATEWAY_JWT_TOKEN empty` | Create `secrets.h` from `secrets.h.example` and rebuild |
 
