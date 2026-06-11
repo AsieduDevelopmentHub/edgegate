@@ -13,7 +13,7 @@ jobs:
       run:
         working-directory: apps/backend
     env:
-      DATABASE_URL: sqlite+aiosqlite:///:memory:
+      DATABASE_URL: "sqlite+aiosqlite:///:memory:"
       LOCAL_DEV: "true"
       SECRET_KEY: ci-test-secret
       GATEWAY_JWT_SECRET: ci-gateway-jwt-secret
