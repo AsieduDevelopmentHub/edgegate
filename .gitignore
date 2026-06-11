@@ -16,6 +16,9 @@ out/
 *.egg-info/
 .eggs/
 
+# Firmware secrets
+apps/firmware/include/secrets.h
+
 # PlatformIO
 .pio/
 .pioenvs/

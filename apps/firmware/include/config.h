@@ -1,5 +1,10 @@
 #pragma once
 
+// Optional local overrides (Wi-Fi, JWT, backend IP) — copy secrets.h.example → secrets.h
+#if __has_include("secrets.h")
+#include "secrets.h"
+#endif
+
 #ifndef GATEWAY_UUID
 #define GATEWAY_UUID "00000000-0000-0000-0000-000000000001"
 #endif
@@ -24,8 +29,9 @@
 #define WIFI_AP_PASSWORD "edgegate123"
 #endif
 
+// ESP32-C3 is 2.4 GHz only — use your router's 2.4 GHz SSID (not *_5G)
 #ifndef WIFI_STA_SSID
-#define WIFI_STA_SSID "MAXY.OT_5G"
+#define WIFI_STA_SSID "MAXY.OT"
 #endif
 
 #ifndef WIFI_STA_PASSWORD

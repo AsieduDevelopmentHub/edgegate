@@ -32,7 +32,22 @@ public:
     }
 
     void flush(uint64_t now_ms) {
-        if (WiFi.status() != WL_CONNECTED) return;
+        if (WiFi.status() != WL_CONNECTED) {
+            static unsigned long last_warn = 0;
+            if (millis() - last_warn > 60000) {
+                Serial.println("[telemetry] waiting for STA — events buffered locally");
+                last_warn = millis();
+            }
+            return;
+        }
+        if (!token_[0]) {
+            static unsigned long last_warn = 0;
+            if (millis() - last_warn > 60000) {
+                Serial.println("[telemetry] GATEWAY_JWT_TOKEN missing — set in secrets.h");
+                last_warn = millis();
+            }
+            return;
+        }
 
         StaticJsonDocument<2048> doc;
         JsonArray events = doc["events"].to<JsonArray>();
@@ -76,7 +91,9 @@ public:
             last_flush_ = now_ms;
             retry_delay_ = 1000;
             batch_count_ += count;
+            Serial.printf("[telemetry] sent %d events\n", count);
         } else {
+            Serial.printf("[telemetry] POST failed HTTP %d\n", code);
             retry_delay_ = retry_delay_ < 60000 ? retry_delay_ * 2 : 60000;
         }
     }

@@ -24,6 +24,7 @@ static WiFiManager wifi_mgr;
 static TaskManager task_mgr;
 
 static volatile bool policy_updated = false;
+static char last_client_mac[18] = "00:00:00:00:00:00";
 
 static uint64_t nowMs() {
     return (uint64_t)millis();
@@ -39,6 +40,26 @@ static void captureEvent(uint8_t type, const char* device_mac, const char* paylo
     if (payload) strncpy(e.payload, payload, 127);
     telemetry.enqueue(e);
     nvs_store.saveEventId(telemetry.currentEventId());
+}
+
+static void onApClient(const char* mac, bool connected) {
+    DeviceState* dev = devices.upsert(mac);
+    if (dev) {
+        dev->connected = connected;
+        dev->last_seen = nowMs();
+    }
+    strncpy(last_client_mac, mac, 17);
+    last_client_mac[17] = '\0';
+
+    char payload[64];
+    snprintf(payload, sizeof(payload), "{\"mac\":\"%s\"}", mac);
+    if (connected) {
+        captureEvent(EVT_DEVICE_CONNECTED, mac, payload, 1);
+        Serial.printf("[event] device_connected %s\n", mac);
+    } else {
+        captureEvent(EVT_DEVICE_DISCONNECTED, mac, payload, 1);
+        Serial.printf("[event] device_disconnected %s\n", mac);
+    }
 }
 
 static void fetchPolicies() {
@@ -122,7 +143,7 @@ static void dnsTask(void* param) {
     for (;;) {
         if (task_mgr.receive(msg, pdMS_TO_TICKS(50))) {
             if (msg.type == 1) {
-                handleDNSQuery(msg.data, "AA:BB:CC:DD:EE:FF");
+                handleDNSQuery(msg.data, last_client_mac);
             }
         }
         dns_cache.evictExpired(nowMs());
@@ -171,10 +192,21 @@ static void apiTask(void* param) {
     }
 }
 
-void setup() {
+static void serialInit() {
     Serial.begin(115200);
-    delay(500);
+    // Native USB CDC needs time for the host to enumerate after reset/upload.
+    Serial.setTxTimeoutMs(0);
+    unsigned long start = millis();
+    while (!Serial && millis() - start < 3000) {
+        delay(10);
+    }
+    delay(200);
+}
 
+void setup() {
+    serialInit();
+
+    Serial.println();
     Serial.printf("EdgeGate v%s boot heap=%u\n", EDGEGATE_VERSION, ESP.getFreeHeap());
 
     nvs_store.begin();
@@ -184,6 +216,12 @@ void setup() {
 
     policy_trie.addRule("ads.example.com", POLICY_DENY);
     policy_trie.addRule("malware.test", POLICY_DENY);
+
+    wifi_mgr.setClientCallback(onApClient);
+
+    if (strlen(GATEWAY_JWT_TOKEN) == 0) {
+        Serial.println("[config] GATEWAY_JWT_TOKEN empty — copy secrets.h.example to secrets.h");
+    }
 
     if (!wifi_mgr.begin()) {
         Serial.println("WiFi AP init failed");
@@ -214,6 +252,16 @@ void setup() {
 
 void loop() {
     static unsigned long last_sim = 0;
+    static unsigned long last_heartbeat = 0;
+
+    if (millis() - last_heartbeat > 30000) {
+        Serial.printf("[heartbeat] heap=%u sta=%s ap_clients=%d\n",
+            ESP.getFreeHeap(),
+            wifi_mgr.staConnected() ? "up" : "down",
+            WiFi.softAPgetStationNum());
+        last_heartbeat = millis();
+    }
+
     if (millis() - last_sim > 10000) {
         task_mgr.send(1, "example.com");
         last_sim = millis();
