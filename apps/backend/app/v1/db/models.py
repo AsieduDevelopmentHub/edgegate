@@ -2,7 +2,6 @@ import uuid as py_uuid
 from datetime import datetime
 
 from sqlalchemy import (
-    BigInteger,
     Boolean,
     DateTime,
     Float,
@@ -13,7 +12,6 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -25,7 +23,8 @@ class Gateway(Base):
     __tablename__ = "gateways"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    uuid: Mapped[py_uuid.UUID] = mapped_column(UUID(as_uuid=True), unique=True, nullable=False)
+    # String UUID — PostgreSQL UUID type breaks SQLite reads (HTTP 500 on ingest)
+    uuid: Mapped[str] = mapped_column(String(36), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="offline")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -33,7 +32,7 @@ class Gateway(Base):
     sessions: Mapped[list["Session"]] = relationship(back_populates="gateway")
     telemetry: Mapped[list["Telemetry"]] = relationship(back_populates="gateway")
 
-    __table_args__ = (Index("ix_gateways_uuid_hash", "uuid", postgresql_using="hash"),)
+    __table_args__ = (Index("ix_gateways_uuid", "uuid"),)
 
 
 class Device(Base):
@@ -51,7 +50,7 @@ class Device(Base):
     sessions: Mapped[list["Session"]] = relationship(back_populates="device")
     dns_logs: Mapped[list["DNSLog"]] = relationship(back_populates="device")
 
-    __table_args__ = (Index("ix_devices_mac_hash", "mac", postgresql_using="hash"),)
+    __table_args__ = (Index("ix_devices_mac", "mac"),)
 
 
 class Session(Base):
@@ -75,7 +74,7 @@ class Session(Base):
 class DNSLog(Base):
     __tablename__ = "dns_logs"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     device_id: Mapped[int] = mapped_column(ForeignKey("devices.id"), nullable=False)
     domain: Mapped[str] = mapped_column(Text, nullable=False)
     resolved: Mapped[str | None] = mapped_column(String(45))
@@ -85,21 +84,13 @@ class DNSLog(Base):
 
     device: Mapped["Device"] = relationship(back_populates="dns_logs")
 
-    __table_args__ = (
-        Index("ix_dns_logs_created_at", "created_at"),
-        Index(
-            "ix_dns_logs_domain_gin",
-            "domain",
-            postgresql_using="gin",
-            postgresql_ops={"domain": "gin_trgm_ops"},
-        ),
-    )
+    __table_args__ = (Index("ix_dns_logs_created_at", "created_at"),)
 
 
 class Telemetry(Base):
     __tablename__ = "telemetry"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     metric: Mapped[str] = mapped_column(String(64), nullable=False)
     value: Mapped[float] = mapped_column(Float, nullable=False)
@@ -124,7 +115,7 @@ class Policy(Base):
 class PolicyHit(Base):
     __tablename__ = "policy_hits"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     rule: Mapped[str] = mapped_column(String(256), nullable=False)
     action: Mapped[str] = mapped_column(String(32), nullable=False)
     duration_ms: Mapped[float] = mapped_column(Float, default=0.0)

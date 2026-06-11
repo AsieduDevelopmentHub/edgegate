@@ -15,6 +15,26 @@ from app.v1.services.websocket_hub import ws_hub
 logger = logging.getLogger(__name__)
 
 
+def _normalize_payload(payload: dict | str | None) -> dict:
+    if not payload:
+        return {}
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except json.JSONDecodeError:
+            return {"raw": payload}
+    if not isinstance(payload, dict):
+        return {}
+    if "raw" in payload and isinstance(payload["raw"], str):
+        try:
+            inner = json.loads(payload["raw"])
+            if isinstance(inner, dict):
+                return {**payload, **inner}
+        except json.JSONDecodeError:
+            pass
+    return payload
+
+
 class EventService:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -31,7 +51,7 @@ class EventService:
         for event in events:
             event_type = event.get("type", "")
             device_mac = event.get("device")
-            payload = event.get("payload", {})
+            payload = _normalize_payload(event.get("payload", {}))
 
             device = None
             if device_mac:

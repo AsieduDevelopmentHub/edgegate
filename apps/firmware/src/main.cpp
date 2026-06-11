@@ -299,9 +299,10 @@ void loop() {
     static unsigned long last_heartbeat = 0;
 
     if (millis() - last_heartbeat > 30000) {
-        Serial.printf("[heartbeat] heap=%u sta=%s ap_clients=%d\n",
+        Serial.printf("[heartbeat] heap=%u sta=%s napt=%s ap_clients=%d\n",
             ESP.getFreeHeap(),
             wifi_mgr.staConnected() ? "up" : "down",
+            wifi_mgr.internetSharingEnabled() ? "on" : "off",
             WiFi.softAPgetStationNum());
         last_heartbeat = millis();
     }

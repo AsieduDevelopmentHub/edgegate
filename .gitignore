@@ -15,6 +15,7 @@ build/
 out/
 *.egg-info/
 .eggs/
+build-*.txt
 
 # Firmware secrets
 apps/firmware/include/secrets.h

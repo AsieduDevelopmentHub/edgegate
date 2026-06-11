@@ -13,4 +13,7 @@ export const API_ROUTES = {
   health: "/health",
   ws: "/ws",
   authRotate: "/v1/auth/rotate",
+  adminSystem: "/v1/admin/system",
+  adminClear: "/v1/admin/clear",
+  adminExport: "/v1/admin/export",
 } as const;

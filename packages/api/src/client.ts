@@ -66,6 +66,55 @@ export class EdgeGateClient {
     });
   }
 
+  updatePolicy(
+    id: number,
+    data: Partial<Omit<Policy, "id" | "created_at">>
+  ): Promise<Policy> {
+    return this.request(`${API_ROUTES.policies}/${id}`, {
+      method: "PATCH",
+      headers: this.headers(),
+      body: JSON.stringify(data),
+    });
+  }
+
+  deletePolicy(id: number): Promise<{ deleted: number }> {
+    return this.request(`${API_ROUTES.policies}/${id}`, {
+      method: "DELETE",
+      headers: this.headers(),
+    });
+  }
+
+  getSystemInfo(): Promise<{
+    service: string;
+    version: string;
+    timestamp: string;
+    counts: Record<string, number>;
+  }> {
+    return this.request(API_ROUTES.adminSystem);
+  }
+
+  clearData(scopes: string[], confirm = "CLEAR"): Promise<{ cleared: Record<string, number> }> {
+    return this.request(API_ROUTES.adminClear, {
+      method: "POST",
+      headers: this.headers(),
+      body: JSON.stringify({ scopes, confirm }),
+    });
+  }
+
+  async exportData(scopes: string[]): Promise<Blob> {
+    const q = encodeURIComponent(scopes.join(","));
+    const res = await fetch(`${this.baseUrl}${API_ROUTES.adminExport}?scopes=${q}`);
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`API ${res.status}: ${text}`);
+    }
+    return res.blob();
+  }
+
+  checkHealth(): Promise<{ status: string; service: string }> {
+    return this.request(API_ROUTES.health);
+  }
+
   postEvents(events: EdgeGateEvent[]): Promise<{ accepted: number }> {
     return this.request(API_ROUTES.events, {
       method: "POST",

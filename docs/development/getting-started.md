@@ -67,7 +67,27 @@ cd apps/firmware
 pio run -t upload
 ```
 
-## 5. Verify End-to-End
+## 5. AP Internet Sharing (NAT)
+
+The default firmware env (`esp32-c3-supermini`) captures DNS and policy traffic but **cannot share full home Wi‑Fi internet** until lwIP is rebuilt with NAPT enabled.
+
+**One-time NAPT build** (downloads esp-idf; 15–30+ minutes):
+
+```bash
+cd apps/firmware
+pio run -e esp32-c3-supermini-napt -t upload
+```
+
+After flash, serial heartbeat should show `napt=on` when STA is connected:
+
+```
+[heartbeat] heap=... sta=up napt=on ap_clients=1
+[wifi] AP internet sharing ON (DNS upstream ...)
+```
+
+Connect a phone to `EdgeGate-AP`, then open a browser — traffic routes through the ESP32 to your home router.
+
+## 6. Verify End-to-End
 
 1. Connect a device to `EdgeGate-AP` Wi-Fi
 2. Check the Dashboard Overview for active devices

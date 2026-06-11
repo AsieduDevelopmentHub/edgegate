@@ -8,12 +8,14 @@ interface DataTableProps<T> {
   columns: Column<T>[];
   rows: T[];
   emptyMessage?: string;
+  rowKey?: (row: T, index: number) => string | number;
 }
 
 export function DataTable<T extends Record<string, unknown>>({
   columns,
   rows,
   emptyMessage = "No data",
+  rowKey,
 }: DataTableProps<T>) {
   if (rows.length === 0) {
     return (
@@ -35,7 +37,10 @@ export function DataTable<T extends Record<string, unknown>>({
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={i} className="border-b border-edge-border/50 hover:bg-white/5">
+            <tr
+              key={rowKey ? rowKey(row, i) : i}
+              className="border-b border-edge-border/50 hover:bg-white/5"
+            >
               {columns.map((c) => (
                 <td key={c.key} className="px-4 py-2">
                   {c.render ? c.render(row) : String(row[c.key] ?? "")}

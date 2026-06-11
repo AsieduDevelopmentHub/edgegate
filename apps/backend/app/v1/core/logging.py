@@ -18,9 +18,11 @@ class JSONFormatter(logging.Formatter):
 
 
 def setup_logging() -> None:
+    """JSON logs for app.* only — do not replace uvicorn's root handlers (breaks access logs)."""
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(JSONFormatter())
-    root = logging.getLogger()
-    root.handlers.clear()
-    root.addHandler(handler)
-    root.setLevel(logging.INFO)
+    app_log = logging.getLogger("app")
+    app_log.handlers.clear()
+    app_log.addHandler(handler)
+    app_log.setLevel(logging.INFO)
+    app_log.propagate = False

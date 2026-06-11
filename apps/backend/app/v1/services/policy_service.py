@@ -12,21 +12,38 @@ class PolicyService:
 
     async def list_policies(self) -> list[dict]:
         policies = await self.policy_repo.list_all()
-        return [
-            {
-                "id": p.id,
-                "type": p.type,
-                "pattern": p.pattern,
-                "action": p.action,
-                "enabled": p.enabled,
-                "created_at": p.created_at.isoformat(),
-            }
-            for p in policies
-        ]
+        return [self._serialize(p) for p in policies]
 
     async def create_policy(self, type_: str, pattern: str, action: str, enabled: bool) -> dict:
         p = await self.policy_repo.create(type_, pattern, action, enabled)
         await cache_delete("policies:deploy")
+        return self._serialize(p)
+
+    async def update_policy(
+        self,
+        policy_id: int,
+        *,
+        type_: str | None = None,
+        pattern: str | None = None,
+        action: str | None = None,
+        enabled: bool | None = None,
+    ) -> dict | None:
+        p = await self.policy_repo.update(
+            policy_id, type_=type_, pattern=pattern, action=action, enabled=enabled
+        )
+        if not p:
+            return None
+        await cache_delete("policies:deploy")
+        return self._serialize(p)
+
+    async def delete_policy(self, policy_id: int) -> bool:
+        deleted = await self.policy_repo.delete(policy_id)
+        if deleted:
+            await cache_delete("policies:deploy")
+        return deleted
+
+    @staticmethod
+    def _serialize(p) -> dict:
         return {
             "id": p.id,
             "type": p.type,
