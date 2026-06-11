@@ -73,20 +73,22 @@ static void fetchPolicies() {
     http.setTimeout(5000);
     if (!http.begin(url)) return;
 
+    static char auth_hdr[GATEWAY_JWT_MAX + 16];
+    static char body[1024];
+    static StaticJsonDocument<1024> doc;
+
     http.addHeader("Content-Type", "application/json");
     if (telemetry.hasToken()) {
-        char auth[GATEWAY_JWT_MAX + 16];
-        snprintf(auth, sizeof(auth), "Bearer %s", telemetry.token());
-        http.addHeader("Authorization", auth);
+        snprintf(auth_hdr, sizeof(auth_hdr), "Bearer %s", telemetry.token());
+        http.addHeader("Authorization", auth_hdr);
     }
 
     int code = http.GET();
     if (code == 200) {
-        char body[1024];
         int len = http.getStream().readBytes(body, sizeof(body) - 1);
         body[len > 0 ? len : 0] = '\0';
 
-        StaticJsonDocument<1024> doc;
+        doc.clear();
         if (deserializeJson(doc, body) == DeserializationError::Ok) {
             JsonObject config = doc["config"];
             JsonArray rules = config["rules"];
@@ -263,10 +265,10 @@ void setup() {
     captureEvent(EVT_GATEWAY_HEALTH, nullptr, "{\"status\":\"online\"}", 0);
 
     TaskManager::createTask(wifiTask, "wifi_task", 3072, 5, 0);
-    TaskManager::createTask(authTask, "auth_task", 4096, 4, 1);
+    TaskManager::createTask(authTask, "auth_task", 6144, 4, 1);
     TaskManager::createTask(dnsTask, "dns_task", 3072, 4, 0);
-    TaskManager::createTask(policyTask, "policy_task", 4096, 3, 0);
-    TaskManager::createTask(telemetryTask, "telemetry_task", 4096, 3, 1);
+    TaskManager::createTask(policyTask, "policy_task", 6144, 3, 0);
+    TaskManager::createTask(telemetryTask, "telemetry_task", 8192, 3, 1);
     TaskManager::createTask(storageTask, "storage_task", 2048, 2, 1);
     TaskManager::createTask(apiTask, "api_task", 2048, 2, 1);
 

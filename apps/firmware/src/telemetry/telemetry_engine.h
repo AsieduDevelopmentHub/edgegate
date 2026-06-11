@@ -52,12 +52,18 @@ public:
             return;
         }
 
-        StaticJsonDocument<2048> doc;
+        // Static workspace — HTTPClient + JSON on the 4 KB task stack overflowed.
+        static StaticJsonDocument<1536> doc;
+        static char body[1536];
+        static char auth[GATEWAY_JWT_MAX + 16];
+
+        doc.clear();
         JsonArray events = doc["events"].to<JsonArray>();
         Event e;
         int count = 0;
+        const int max_batch = TELEMETRY_BATCH_SIZE < 10 ? TELEMETRY_BATCH_SIZE : 10;
 
-        while (buffer_.pop(e) && count < TELEMETRY_BATCH_SIZE) {
+        while (buffer_.pop(e) && count < max_batch) {
             JsonObject obj = events.add<JsonObject>();
             obj["gateway"] = GATEWAY_UUID;
             obj["timestamp"] = e.ts;
@@ -74,15 +80,14 @@ public:
         char url[128];
         snprintf(url, sizeof(url), "http://%s:%d/v1/events", BACKEND_HOST, BACKEND_PORT);
 
-        char body[2048];
         size_t len = serializeJson(doc, body, sizeof(body));
         if (len == 0 || len >= sizeof(body)) return;
 
         HTTPClient http;
+        http.setTimeout(5000);
         http.begin(url);
         http.addHeader("Content-Type", "application/json");
         if (token_[0]) {
-            char auth[GATEWAY_JWT_MAX + 16];
             snprintf(auth, sizeof(auth), "Bearer %s", token_);
             http.addHeader("Authorization", auth);
         }

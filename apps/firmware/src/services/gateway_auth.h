@@ -18,11 +18,15 @@ inline bool gatewayFetchDeviceLogin(NVSStore& nvs, char* token_out, size_t token
     char url[160];
     snprintf(url, sizeof(url), "http://%s:%d/v1/auth/device-login", BACKEND_HOST, BACKEND_PORT);
 
-    StaticJsonDocument<256> body;
+    static StaticJsonDocument<256> body;
+    static char payload[192];
+    static char response[512];
+    static StaticJsonDocument<512> doc;
+
+    body.clear();
     body["gateway_uuid"] = GATEWAY_UUID;
     body["gateway_name"] = GATEWAY_NAME;
 
-    char payload[192];
     size_t payload_len = serializeJson(body, payload, sizeof(payload));
     if (payload_len == 0) return false;
 
@@ -38,12 +42,11 @@ inline bool gatewayFetchDeviceLogin(NVSStore& nvs, char* token_out, size_t token
         return false;
     }
 
-    char response[512];
     int len = http.getStream().readBytes(response, sizeof(response) - 1);
     response[len > 0 ? len : 0] = '\0';
     http.end();
 
-    StaticJsonDocument<512> doc;
+    doc.clear();
     if (deserializeJson(doc, response) != DeserializationError::Ok) {
         Serial.println("[auth] device-login invalid JSON");
         return false;
