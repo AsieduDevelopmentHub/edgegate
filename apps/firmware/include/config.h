@@ -9,7 +9,7 @@
 #endif
 
 #ifndef BACKEND_HOST
-#define BACKEND_HOST "192.168.1.100"
+#define BACKEND_HOST "192.168.1.202"
 #endif
 
 #ifndef BACKEND_PORT
@@ -25,19 +25,19 @@
 #endif
 
 #ifndef WIFI_STA_SSID
-#define WIFI_STA_SSID ""
+#define WIFI_STA_SSID "MAXY.OT_5G"
 #endif
 
 #ifndef WIFI_STA_PASSWORD
-#define WIFI_STA_PASSWORD ""
+#define WIFI_STA_PASSWORD "asdfghjkl1987"
 #endif
 
 #ifndef GATEWAY_JWT_TOKEN
 #define GATEWAY_JWT_TOKEN ""
 #endif
 
-#define TELEMETRY_BATCH_SIZE 100
-#define TELEMETRY_FLUSH_MS 2000
-#define EVENT_BUFFER_CAPACITY 1024
-#define DNS_CACHE_SIZE 512
-#define MAX_DEVICES 32
+#define TELEMETRY_BATCH_SIZE 20
+#define TELEMETRY_FLUSH_MS 5000
+#define EVENT_BUFFER_CAPACITY 64
+#define DNS_CACHE_SIZE 64
+#define MAX_DEVICES 16

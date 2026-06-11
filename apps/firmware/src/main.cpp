@@ -23,7 +23,6 @@ static NVSStore nvs_store;
 static WiFiManager wifi_mgr;
 static TaskManager task_mgr;
 
-static uint32_t event_counter = 0;
 static volatile bool policy_updated = false;
 
 static uint64_t nowMs() {
@@ -49,7 +48,9 @@ static void fetchPolicies() {
     snprintf(url, sizeof(url), "http://%s:%d/v1/policies/deploy", BACKEND_HOST, BACKEND_PORT);
 
     HTTPClient http;
-    http.begin(url);
+    http.setTimeout(5000);
+    if (!http.begin(url)) return;
+
     http.addHeader("Content-Type", "application/json");
     if (strlen(GATEWAY_JWT_TOKEN) > 0) {
         char auth[280];
@@ -59,8 +60,11 @@ static void fetchPolicies() {
 
     int code = http.GET();
     if (code == 200) {
-        String body = http.getString();
-        StaticJsonDocument<4096> doc;
+        char body[1024];
+        int len = http.getStream().readBytes(body, sizeof(body) - 1);
+        body[len > 0 ? len : 0] = '\0';
+
+        StaticJsonDocument<1024> doc;
         if (deserializeJson(doc, body) == DeserializationError::Ok) {
             JsonObject config = doc["config"];
             JsonArray rules = config["rules"];
@@ -106,6 +110,7 @@ static void handleDNSQuery(const char* domain, const char* device_mac) {
 static void wifiTask(void* param) {
     (void)param;
     for (;;) {
+        wifi_mgr.tickSta();
         wifi_mgr.processDNS();
         vTaskDelay(pdMS_TO_TICKS(10));
     }
@@ -126,21 +131,23 @@ static void dnsTask(void* param) {
 
 static void policyTask(void* param) {
     (void)param;
+    vTaskDelay(pdMS_TO_TICKS(5000));
     for (;;) {
         static unsigned long last_fetch = 0;
         if (millis() - last_fetch > 30000) {
             fetchPolicies();
             last_fetch = millis();
         }
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
 static void telemetryTask(void* param) {
     (void)param;
+    vTaskDelay(pdMS_TO_TICKS(3000));
     for (;;) {
         telemetry.tick(nowMs());
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
@@ -148,24 +155,27 @@ static void storageTask(void* param) {
     (void)param;
     for (;;) {
         nvs_store.saveOfflineCount(event_buffer.size());
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        vTaskDelay(pdMS_TO_TICKS(10000));
     }
 }
 
 static void apiTask(void* param) {
     (void)param;
+    vTaskDelay(pdMS_TO_TICKS(2000));
     for (;;) {
         char health[64];
         snprintf(health, sizeof(health),
             "{\"heap\":%u,\"clients\":%d}", ESP.getFreeHeap(), WiFi.softAPgetStationNum());
         captureEvent(EVT_GATEWAY_HEALTH, nullptr, health, 0);
-        vTaskDelay(pdMS_TO_TICKS(10000));
+        vTaskDelay(pdMS_TO_TICKS(30000));
     }
 }
 
 void setup() {
     Serial.begin(115200);
     delay(500);
+
+    Serial.printf("EdgeGate v%s boot heap=%u\n", EDGEGATE_VERSION, ESP.getFreeHeap());
 
     nvs_store.begin();
     telemetry.setEventId(nvs_store.loadEventId());
@@ -176,11 +186,13 @@ void setup() {
     policy_trie.addRule("malware.test", POLICY_DENY);
 
     if (!wifi_mgr.begin()) {
-        Serial.println("WiFi init failed");
+        Serial.println("WiFi AP init failed");
         return;
     }
 
-    Serial.printf("EdgeGate v%s AP: %s\n", EDGEGATE_VERSION, WiFi.softAPIP().toString().c_str());
+    IPAddress ap = wifi_mgr.apIP();
+    Serial.printf("AP ready: %s (%d.%d.%d.%d) heap=%u\n",
+        WIFI_AP_SSID, ap[0], ap[1], ap[2], ap[3], ESP.getFreeHeap());
 
     DeviceState* gw = devices.upsert("GW:00:00:00:00:01");
     if (gw) {
@@ -189,21 +201,22 @@ void setup() {
     }
 
     captureEvent(EVT_GATEWAY_HEALTH, nullptr, "{\"status\":\"online\"}", 0);
-    fetchPolicies();
 
-    TaskManager::createTask(wifiTask, "wifi_task", 4096, 5, 0);
-    TaskManager::createTask(dnsTask, "dns_task", 4096, 4, 0);
-    TaskManager::createTask(policyTask, "policy_task", 4096, 4, 0);
-    TaskManager::createTask(telemetryTask, "telemetry_task", 8192, 3, 1);
-    TaskManager::createTask(storageTask, "storage_task", 4096, 2, 1);
-    TaskManager::createTask(apiTask, "api_task", 4096, 2, 1);
+    TaskManager::createTask(wifiTask, "wifi_task", 3072, 5, 0);
+    TaskManager::createTask(dnsTask, "dns_task", 3072, 4, 0);
+    TaskManager::createTask(policyTask, "policy_task", 4096, 3, 0);
+    TaskManager::createTask(telemetryTask, "telemetry_task", 4096, 3, 1);
+    TaskManager::createTask(storageTask, "storage_task", 2048, 2, 1);
+    TaskManager::createTask(apiTask, "api_task", 2048, 2, 1);
+
+    Serial.printf("Tasks started heap=%u\n", ESP.getFreeHeap());
 }
 
 void loop() {
     static unsigned long last_sim = 0;
-    if (millis() - last_sim > 5000) {
+    if (millis() - last_sim > 10000) {
         task_mgr.send(1, "example.com");
         last_sim = millis();
     }
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(200));
 }

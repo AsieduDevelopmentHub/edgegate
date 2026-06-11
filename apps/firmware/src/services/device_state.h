@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include "config.h"
 
 struct DeviceState {
     char mac[18];
@@ -15,7 +16,7 @@ struct DeviceState {
 
 class DeviceStateEngine {
 public:
-    static constexpr size_t MAX = 32;
+    static constexpr size_t MAX = MAX_DEVICES;
 
     DeviceStateEngine() : count_(0) {
         memset(devices_, 0, sizeof(devices_));

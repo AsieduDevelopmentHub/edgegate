@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include "config.h"
 
 struct DNSCacheEntry {
     char domain[64];
@@ -13,7 +14,7 @@ struct DNSCacheEntry {
 
 class DNSCache {
 public:
-    static constexpr size_t MAX = 512;
+    static constexpr size_t MAX = DNS_CACHE_SIZE;
 
     DNSCache() : count_(0), head_(0) {
         memset(entries_, 0, sizeof(entries_));

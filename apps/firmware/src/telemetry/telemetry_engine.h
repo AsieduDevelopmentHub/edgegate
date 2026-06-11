@@ -34,7 +34,7 @@ public:
     void flush(uint64_t now_ms) {
         if (WiFi.status() != WL_CONNECTED) return;
 
-        StaticJsonDocument<8192> doc;
+        StaticJsonDocument<2048> doc;
         JsonArray events = doc["events"].to<JsonArray>();
         Event e;
         int count = 0;
@@ -56,6 +56,10 @@ public:
         char url[128];
         snprintf(url, sizeof(url), "http://%s:%d/v1/events", BACKEND_HOST, BACKEND_PORT);
 
+        char body[2048];
+        size_t len = serializeJson(doc, body, sizeof(body));
+        if (len == 0 || len >= sizeof(body)) return;
+
         HTTPClient http;
         http.begin(url);
         http.addHeader("Content-Type", "application/json");
@@ -65,9 +69,7 @@ public:
             http.addHeader("Authorization", auth);
         }
 
-        String body;
-        serializeJson(doc, body);
-        int code = http.POST(body);
+        int code = http.POST((uint8_t*)body, len);
         http.end();
 
         if (code == 200) {
