@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.local
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+*.egg-info/
+.eggs/
+
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.log
+
+# Test / coverage
+.coverage
+htmlcov/
+.pytest_cache/
+playwright-report/
+test-results/
+
+# Misc
+*.db
+*.sqlite

@@ -1,0 +1,6 @@
+{
+  "name": "@edgegate/telemetry",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EdgeGate event JSON schema"
+}

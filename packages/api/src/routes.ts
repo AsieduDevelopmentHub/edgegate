@@ -1,0 +1,16 @@
+export const API_ROUTES = {
+  events: "/v1/events",
+  sessionStart: "/v1/session/start",
+  sessionEnd: "/v1/session/end",
+  telemetry: "/v1/telemetry",
+  dashboard: "/v1/dashboard",
+  policies: "/v1/policies",
+  policiesDeploy: "/v1/policies/deploy",
+  devices: "/v1/devices",
+  dns: "/v1/dns",
+  gateways: "/v1/gateways",
+  policiesDeployGet: "/v1/policies/deploy",
+  health: "/health",
+  ws: "/ws",
+  authRotate: "/v1/auth/rotate",
+} as const;

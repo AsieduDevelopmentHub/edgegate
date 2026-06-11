@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EdgeGateEvent",
+  "type": "object",
+  "required": ["gateway", "timestamp", "type", "payload"],
+  "properties": {
+    "gateway": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Gateway UUID"
+    },
+    "timestamp": {
+      "type": "integer",
+      "description": "Unix timestamp in milliseconds"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "device_connected",
+        "device_disconnected",
+        "dns_query",
+        "domain_blocked",
+        "session_update",
+        "gateway_health",
+        "policy_hit"
+      ]
+    },
+    "device": {
+      "type": "string",
+      "description": "MAC address",
+      "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$"
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

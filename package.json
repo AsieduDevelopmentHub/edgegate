@@ -1,0 +1,21 @@
+{
+  "name": "edgegate",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/dashboard",
+    "packages/shared",
+    "packages/api"
+  ],
+  "scripts": {
+    "dev:dashboard": "npm run dev --workspace=apps/dashboard",
+    "build:dashboard": "npm run build --workspace=apps/dashboard",
+    "lint": "npm run lint --workspaces --if-present",
+    "docker:up": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "docker:build": "docker compose -f infra/docker/docker-compose.yml build"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
