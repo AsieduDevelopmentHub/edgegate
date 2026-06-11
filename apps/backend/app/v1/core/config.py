@@ -4,7 +4,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    database_url: str = "postgresql+asyncpg://edgegate:edgegate_secret@localhost:5432/edgegate"
+    database_url: str = "sqlite+aiosqlite:///./edgegate.db"
+    local_dev: bool = True
     redis_url: str = "redis://localhost:6379/0"
     secret_key: str = "dev-secret-change-in-production"
     gateway_jwt_secret: str = "gateway-jwt-dev-secret"

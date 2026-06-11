@@ -10,6 +10,7 @@ from slowapi.util import get_remote_address
 from app.v1.api import auth, dashboard, devices, dns, events, gateways, policies, sessions, telemetry, websocket
 from app.v1.core.config import settings
 from app.v1.core.logging import setup_logging
+from app.v1.db.bootstrap import init_local_db
 from app.v1.services.websocket_hub import ws_hub
 
 limiter = Limiter(key_func=get_remote_address)
@@ -18,6 +19,7 @@ limiter = Limiter(key_func=get_remote_address)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging()
+    await init_local_db()
     await ws_hub.start_broadcast_loop()
     yield
 

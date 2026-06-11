@@ -17,6 +17,8 @@ dependencies = [
     "slowapi>=0.1.9",
     "httpx>=0.28.0",
     "orjson>=3.10.0",
+    "aiosqlite>=0.20.0",
+    "greenlet>=3.0.0",
 ]
 
 [project.optional-dependencies]

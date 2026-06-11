@@ -2,7 +2,7 @@
 
 #include <WiFi.h>
 #include <DNSServer.h>
-#include "../../include/config.h"
+#include "config.h"
 
 class WiFiManager {
 public:

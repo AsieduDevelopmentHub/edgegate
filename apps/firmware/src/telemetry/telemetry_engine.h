@@ -5,7 +5,7 @@
 #include <ArduinoJson.h>
 #include "../core/event.h"
 #include "../core/circular_buffer.h"
-#include "../../include/config.h"
+#include "config.h"
 
 class TelemetryEngine {
 public:
