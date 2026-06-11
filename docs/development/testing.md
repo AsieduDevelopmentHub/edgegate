@@ -47,11 +47,11 @@ Open http://localhost:8089 and run with 50+ users to simulate sustained telemetr
 
 ## CI
 
-GitHub Actions runs all checks on push/PR:
+GitHub Actions runs on push/PR to `main`:
 
-- Backend lint (ruff) + pytest
-- Dashboard build
-- Firmware compile + unit tests
-- Integration smoke tests (docker compose)
+| Workflow | What it runs |
+|----------|----------------|
+| [`backend-ci.yml`](../../.github/workflows/backend-ci.yml) | Ruff lint + format check + pytest (backend-only, path-filtered) |
+| [`ci.yml`](../../.github/workflows/ci.yml) | Full monorepo: backend, dashboard build, firmware, integration (Docker) |
 
-See [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml).
+Backend CI uses in-memory SQLite — no PostgreSQL or Redis required.
