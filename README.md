@@ -6,11 +6,11 @@ EdgeGate combines embedded systems engineering with modern backend infrastructur
 
 ---
 
-Architecture
+## Architecture
 
 EdgeGate is organized as a monorepo containing three primary system components.
 
-Firmware ("apps/firmware")
+### Firmware (`apps/firmware`)
 
 ESP32-C3 SuperMini edge gateway responsible for:
 
@@ -20,7 +20,7 @@ ESP32-C3 SuperMini edge gateway responsible for:
 - Telemetry collection and event batching
 - Secure communication with backend services
 
-Backend ("apps/backend")
+### Backend (`apps/backend`)
 
 FastAPI-based control plane responsible for:
 
@@ -31,7 +31,7 @@ FastAPI-based control plane responsible for:
 - PostgreSQL persistence
 - Redis-powered caching and realtime coordination
 
-Dashboard ("apps/dashboard")
+### Dashboard (`apps/dashboard`)
 
 Next.js monitoring interface providing:
 
@@ -43,27 +43,30 @@ Next.js monitoring interface providing:
 
 ---
 
-Documentation
+## Documentation
 
 Project documentation is organized into conceptual, architectural, and implementation guides.
 
-Topic| Path
-Project Overview| "docs/init/about.md"
-Technical Specification| "docs/init/overview.md"
-System Architecture| "docs/architecture/system.md"
-API Reference| "docs/api/reference.md"
-Firmware Setup| "docs/firmware/setup.md"
-Docker Deployment| "docs/deployment/docker.md"
-Development Guide| "docs/development/getting-started.md"
-Testing| "docs/development/testing.md"
+| Topic | Path |
+|---|---|
+| Project Overview | `docs/init/about.md` |
+| Technical Specification | `docs/init/overview.md` |
+| System Architecture | `docs/architecture/system.md` |
+| API Reference | `docs/api/reference.md` |
+| Firmware Setup | `docs/firmware/setup.md` |
+| Docker Deployment | `docs/deployment/docker.md` |
+| Development Guide | `docs/development/getting-started.md` |
+| Testing | `docs/development/testing.md` |
 
 ---
 
-Getting Started
+## Getting Started
 
-1. Configure Environment
+### 1. Configure Environment
 
+```bash
 cp .env.example .env
+```
 
 Update configuration values:
 
@@ -75,88 +78,91 @@ Update configuration values:
 
 ---
 
-2. Run Development Environment
+### 2. Run Development Environment
 
-Using Cursor Tasks
+#### Using Cursor Tasks
 
-Open Command Palette:
+Open the Command Palette:
 
+```
 Ctrl + Shift + P
+```
 
 Run:
 
-Tasks: Run Task
-→ EdgeGate: Dev Stack
+```
+Tasks: Run Task → EdgeGate: Dev Stack
+```
 
-Manual Startup
+#### Manual Startup
 
-Backend:
+**Backend:**
 
+```bash
 cd apps/backend
-
 set PYTHONPATH=.
-
 python -m uvicorn app.main:app --reload --port 8000
+```
 
-Dashboard:
+**Dashboard:**
 
+```bash
 cd apps/dashboard
-
 npm install
-
 npm run dev
+```
 
 ---
 
-3. Run with Docker
+### 3. Run with Docker
 
+```bash
 npm run docker:up
+```
 
-Services:
-
-Service| Endpoint
-Dashboard| http://localhost
-API| http://localhost/api
-WebSocket| ws://localhost/ws
+| Service | Endpoint |
+|---|---|
+| Dashboard | http://localhost |
+| API | http://localhost/api |
+| WebSocket | ws://localhost/ws |
 
 ---
 
-4. Flash Firmware
+### 4. Flash Firmware
 
+```bash
 cd apps/firmware
-
 pio run -t upload
+```
 
-Additional firmware instructions:
-
-docs/firmware/setup.md
+Additional firmware instructions: [`docs/firmware/setup.md`](docs/firmware/setup.md)
 
 ---
 
-Development Workflow
+## Development Workflow
 
-Backend
+### Backend
 
+```bash
 cd apps/backend
-
 pip install -e ".[dev]"
-
 alembic upgrade head
-
 uvicorn app.main:app --reload --port 8000
+```
 
-Dashboard
+### Dashboard
 
+```bash
 cd apps/dashboard
-
 npm install
-
 npm run dev:dashboard
+```
 
 ---
 
-Repository Structure
+## Repository Structure
 
+```
 apps/
 ├── firmware/      PlatformIO firmware for ESP32-C3 gateway
 ├── backend/       FastAPI control plane
@@ -177,10 +183,11 @@ tests/
 
 docs/
 └── Project documentation
+```
 
 ---
 
-Design Principles
+## Design Principles
 
 EdgeGate is built around the following principles:
 
@@ -195,7 +202,7 @@ EdgeGate is built around the following principles:
 
 ---
 
-Core Capabilities
+## Core Capabilities
 
 - Device session tracking
 - DNS request observation
@@ -207,8 +214,6 @@ Core Capabilities
 
 ---
 
-License
+## License
 
-Distributed under the MIT License.
-
-See "LICENSE" for additional information.
+Distributed under the MIT License. See [`LICENSE`](LICENSE) for additional information.
