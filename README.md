@@ -1,4 +1,4 @@
-EdgeGate
+#EdgeGate
 
 High-performance network observation and policy gateway built on ESP32-C3, designed for device visibility, DNS-aware policy enforcement, session intelligence, and real-time telemetry.
 
@@ -48,13 +48,13 @@ Documentation
 Project documentation is organized into conceptual, architectural, and implementation guides.
 
 Topic| Path
-Project overview| "docs/init/about.md"
-Technical specification| "docs/init/overview.md"
-System architecture| "docs/architecture/system.md"
-API reference| "docs/api/reference.md"
-Firmware setup| "docs/firmware/setup.md"
-Docker deployment| "docs/deployment/docker.md"
-Development guide| "docs/development/getting-started.md"
+Project Overview| "docs/init/about.md"
+Technical Specification| "docs/init/overview.md"
+System Architecture| "docs/architecture/system.md"
+API Reference| "docs/api/reference.md"
+Firmware Setup| "docs/firmware/setup.md"
+Docker Deployment| "docs/deployment/docker.md"
+Development Guide| "docs/development/getting-started.md"
 Testing| "docs/development/testing.md"
 
 ---
@@ -63,17 +63,15 @@ Getting Started
 
 1. Configure Environment
 
-Create a local environment file:
-
 cp .env.example .env
 
-Update configuration values including:
+Update configuration values:
 
 - Database credentials
 - Redis connection
 - Backend secrets
 - Gateway configuration
-- Local development settings
+- Development environment settings
 
 ---
 
@@ -90,8 +88,6 @@ Run:
 Tasks: Run Task
 → EdgeGate: Dev Stack
 
----
-
 Manual Startup
 
 Backend:
@@ -100,9 +96,7 @@ cd apps/backend
 
 set PYTHONPATH=.
 
-python -m uvicorn app.main:app \
---reload \
---port 8000
+python -m uvicorn app.main:app --reload --port 8000
 
 Dashboard:
 
@@ -114,13 +108,11 @@ npm run dev
 
 ---
 
-3. Run Using Docker
-
-For containerized development and deployment:
+3. Run with Docker
 
 npm run docker:up
 
-Available services:
+Services:
 
 Service| Endpoint
 Dashboard| http://localhost
@@ -129,15 +121,13 @@ WebSocket| ws://localhost/ws
 
 ---
 
-4. Deploy Firmware
-
-Flash firmware to ESP32-C3:
+4. Flash Firmware
 
 cd apps/firmware
 
 pio run -t upload
 
-For board configuration and flashing instructions:
+Additional firmware instructions:
 
 docs/firmware/setup.md
 
@@ -153,11 +143,7 @@ pip install -e ".[dev]"
 
 alembic upgrade head
 
-uvicorn app.main:app \
---reload \
---port 8000
-
----
+uvicorn app.main:app --reload --port 8000
 
 Dashboard
 
@@ -187,7 +173,7 @@ infra/
 
 tests/
 ├── integration/   Cross-service integration testing
-└── performance/   Load and benchmark suites
+└── performance/   Performance and load testing
 
 docs/
 └── Project documentation
@@ -196,15 +182,28 @@ docs/
 
 Design Principles
 
-EdgeGate is designed around the following principles:
+EdgeGate is built around the following principles:
 
 - Event-driven telemetry
 - Low-latency decision paths
 - Lightweight edge processing
 - Deterministic system behavior
-- Clear separation of data and control planes
+- Separation of data and control planes
 - Scalable backend architecture
-- Observable and testable infrastructure
+- Observable infrastructure
+- Production-grade maintainability
+
+---
+
+Core Capabilities
+
+- Device session tracking
+- DNS request observation
+- Lightweight policy enforcement
+- Telemetry aggregation
+- Historical analytics
+- Gateway orchestration
+- Realtime dashboard monitoring
 
 ---
 
@@ -212,4 +211,4 @@ License
 
 Distributed under the MIT License.
 
-See "LICENSE" for details.
+See "LICENSE" for additional information.
