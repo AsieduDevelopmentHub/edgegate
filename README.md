@@ -1,112 +1,215 @@
-# EdgeGate
+EdgeGate
 
-ESP32-C3 network observation and policy gateway — monorepo.
+High-performance network observation and policy gateway built on ESP32-C3, designed for device visibility, DNS-aware policy enforcement, session intelligence, and real-time telemetry.
 
-## Architecture
+EdgeGate combines embedded systems engineering with modern backend infrastructure to provide a lightweight edge gateway capable of observing network behavior and delivering actionable insights through a centralized control plane.
 
-- **Firmware** (`apps/firmware`) — ESP32-C3 SuperMini gateway with DNS observation and policy enforcement
-- **Backend** (`apps/backend`) — FastAPI control plane with PostgreSQL and Redis
-- **Dashboard** (`apps/dashboard`) — Next.js monitoring UI with realtime WebSocket updates
+---
 
-See [docs/init/about.md](docs/init/about.md) for the conceptual overview and [docs/init/overview.md](docs/init/overview.md) for the technical specification.
+Architecture
 
-## Quick Start
+EdgeGate is organized as a monorepo containing three primary system components.
 
-### 1. Environment
+Firmware ("apps/firmware")
 
-```bash
+ESP32-C3 SuperMini edge gateway responsible for:
+
+- Wi-Fi access point and gateway operation
+- Device session lifecycle tracking
+- DNS observation and policy evaluation
+- Telemetry collection and event batching
+- Secure communication with backend services
+
+Backend ("apps/backend")
+
+FastAPI-based control plane responsible for:
+
+- Gateway management
+- Telemetry ingestion
+- Policy orchestration
+- Session analytics
+- PostgreSQL persistence
+- Redis-powered caching and realtime coordination
+
+Dashboard ("apps/dashboard")
+
+Next.js monitoring interface providing:
+
+- Real-time gateway visibility
+- Device and session monitoring
+- Policy management
+- Historical analytics
+- WebSocket-powered live updates
+
+---
+
+Documentation
+
+Project documentation is organized into conceptual, architectural, and implementation guides.
+
+Topic| Path
+Project overview| "docs/init/about.md"
+Technical specification| "docs/init/overview.md"
+System architecture| "docs/architecture/system.md"
+API reference| "docs/api/reference.md"
+Firmware setup| "docs/firmware/setup.md"
+Docker deployment| "docs/deployment/docker.md"
+Development guide| "docs/development/getting-started.md"
+Testing| "docs/development/testing.md"
+
+---
+
+Getting Started
+
+1. Configure Environment
+
+Create a local environment file:
+
 cp .env.example .env
-# Edit .env with your secrets and Wi-Fi credentials
-```
 
-### 2. Start locally (no Docker)
+Update configuration values including:
 
-In Cursor: `Ctrl+Shift+P` → **Tasks: Run Task** → **EdgeGate: Dev Stack**
+- Database credentials
+- Redis connection
+- Backend secrets
+- Gateway configuration
+- Local development settings
 
-Or manually in two terminals:
+---
 
-```bash
-# Terminal 1 — backend
-cd apps/backend && set PYTHONPATH=.&& python -m uvicorn app.main:app --reload --port 8000
+2. Run Development Environment
 
-# Terminal 2 — dashboard
-cd apps/dashboard && npm run dev
-```
+Using Cursor Tasks
 
-### 2b. Start with Docker (deployment)
+Open Command Palette:
 
-```bash
-npm run docker:up
-```
+Ctrl + Shift + P
 
-Services:
+Run:
 
-| Service   | URL                    |
-|-----------|------------------------|
-| Dashboard | http://localhost       |
-| API       | http://localhost/api   |
-| WebSocket | ws://localhost/ws      |
+Tasks: Run Task
+→ EdgeGate: Dev Stack
 
-### 3. Flash firmware
+---
 
-```bash
-cd apps/firmware
-pio run -t upload
-```
+Manual Startup
 
-See [docs/firmware/setup.md](docs/firmware/setup.md) for full firmware setup.
+Backend:
 
-### 4. Development (without Docker)
-
-**Backend:**
-
-```bash
 cd apps/backend
-pip install -e ".[dev]"
-alembic upgrade head
-uvicorn app.main:app --reload --port 8000
-```
 
-**Dashboard:**
+set PYTHONPATH=.
 
-```bash
+python -m uvicorn app.main:app \
+--reload \
+--port 8000
+
+Dashboard:
+
+cd apps/dashboard
+
 npm install
+
+npm run dev
+
+---
+
+3. Run Using Docker
+
+For containerized development and deployment:
+
+npm run docker:up
+
+Available services:
+
+Service| Endpoint
+Dashboard| http://localhost
+API| http://localhost/api
+WebSocket| ws://localhost/ws
+
+---
+
+4. Deploy Firmware
+
+Flash firmware to ESP32-C3:
+
+cd apps/firmware
+
+pio run -t upload
+
+For board configuration and flashing instructions:
+
+docs/firmware/setup.md
+
+---
+
+Development Workflow
+
+Backend
+
+cd apps/backend
+
+pip install -e ".[dev]"
+
+alembic upgrade head
+
+uvicorn app.main:app \
+--reload \
+--port 8000
+
+---
+
+Dashboard
+
+cd apps/dashboard
+
+npm install
+
 npm run dev:dashboard
-```
 
-## Documentation
+---
 
-| Topic | Path |
-|-------|------|
-| Concept overview | [docs/init/about.md](docs/init/about.md) |
-| Build specification | [docs/init/overview.md](docs/init/overview.md) |
-| System architecture | [docs/architecture/system.md](docs/architecture/system.md) |
-| API reference | [docs/api/reference.md](docs/api/reference.md) |
-| Firmware setup | [docs/firmware/setup.md](docs/firmware/setup.md) |
-| Docker deployment | [docs/deployment/docker.md](docs/deployment/docker.md) |
-| Getting started | [docs/development/getting-started.md](docs/development/getting-started.md) |
-| Testing | [docs/development/testing.md](docs/development/testing.md) |
+Repository Structure
 
-## Project Structure
-
-```
 apps/
-  firmware/     PlatformIO ESP32-C3 firmware
-  backend/      FastAPI control plane
-  dashboard/    Next.js monitoring UI
+├── firmware/      PlatformIO firmware for ESP32-C3 gateway
+├── backend/       FastAPI control plane
+└── dashboard/     Next.js monitoring interface
+
 packages/
-  shared/       Shared TypeScript types
-  api/          API client and route constants
-  telemetry/    Event JSON schema
+├── shared/        Shared domain models and contracts
+├── api/           API client and route definitions
+└── telemetry/     Event schemas and telemetry contracts
+
 infra/
-  docker/       Docker Compose, Nginx
-  postgres/     DB init scripts
+├── docker/        Container infrastructure and reverse proxy
+└── postgres/      Database initialization and provisioning
+
 tests/
-  integration/  Cross-service tests
-  performance/  Locust load tests
-docs/           Documentation
-```
+├── integration/   Cross-service integration testing
+└── performance/   Load and benchmark suites
 
-## License
+docs/
+└── Project documentation
 
-MIT
+---
+
+Design Principles
+
+EdgeGate is designed around the following principles:
+
+- Event-driven telemetry
+- Low-latency decision paths
+- Lightweight edge processing
+- Deterministic system behavior
+- Clear separation of data and control planes
+- Scalable backend architecture
+- Observable and testable infrastructure
+
+---
+
+License
+
+Distributed under the MIT License.
+
+See "LICENSE" for details.
