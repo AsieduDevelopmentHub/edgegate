@@ -1,4 +1,4 @@
-#EdgeGate
+# EdgeGate
 
 High-performance network observation and policy gateway built on ESP32-C3, designed for device visibility, DNS-aware policy enforcement, session intelligence, and real-time telemetry.
 
