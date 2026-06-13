@@ -1,116 +1,342 @@
 # Getting Started
 
-## Prerequisites
+This guide walks you through setting up **EdgeGate** for local development, deployment, firmware flashing, and end-to-end verification.
 
-- Node.js 20+
-- Python 3.11+
-- Docker & Docker Compose
-- PlatformIO (for firmware)
+---
 
-## 1. Clone and Configure
+# Prerequisites
+
+Ensure the following tools are installed before proceeding:
+
+| Requirement | Version |
+|------------|---------|
+| Node.js | 20+ |
+| Python | 3.11+ |
+| Docker | Latest |
+| Docker Compose | Latest |
+| PlatformIO | Latest |
+
+---
+
+# 1. Clone the Repository
+
+Clone the project and initialize environment configuration.
 
 ```bash
 git clone <repo-url> EdgeGate
+
 cd EdgeGate
+
 cp .env.example .env
 ```
 
-## 2. Start Locally (no Docker)
+> Review and update `.env` values where necessary before starting services.
 
-**Backend** (uses SQLite — no PostgreSQL required):
+---
+
+# 2. Run Locally (Without Docker)
+
+Ideal for development and debugging.
+
+## Backend
+
+The default local setup uses **SQLite** and does not require PostgreSQL.
 
 ```bash
 cd apps/backend
+
 pip install aiosqlite greenlet
-# .env already configured for SQLite
-set PYTHONPATH=.          # Windows CMD
-$env:PYTHONPATH="."       # PowerShell
-python -m uvicorn app.main:app --reload --port 8000
+
+# Environment already configured for SQLite
+
+# Windows CMD
+set PYTHONPATH=.
+
+# PowerShell
+$env:PYTHONPATH="."
+
+python -m uvicorn app.main:app \
+    --reload \
+    --port 8000
 ```
 
-**Dashboard** (separate terminal):
+Backend API:
+
+```text
+http://localhost:8000
+```
+
+API Documentation:
+
+```text
+http://localhost:8000/docs
+```
+
+---
+
+## Dashboard
+
+Open a separate terminal:
 
 ```bash
 cd apps/dashboard
+
 npm run dev
 ```
 
-**Recommended — Cursor integrated terminals:**
+Dashboard:
 
-1. `Ctrl+Shift+P` → **Tasks: Run Task** → **EdgeGate: Dev Stack**
+```text
+http://localhost:3000
+```
 
-This starts backend and dashboard in separate Cursor terminal panels.
+---
 
-Open http://localhost:3000 (dashboard) and http://localhost:8000/docs (API).
+## Cursor IDE (Recommended)
 
-## 2b. Start with Docker (deployment)
+EdgeGate includes development tasks optimized for Cursor.
+
+Open:
+
+```text
+Ctrl + Shift + P
+```
+
+Navigate to:
+
+```text
+Tasks → Run Task → EdgeGate: Dev Stack
+```
+
+This automatically launches:
+
+- Backend server
+- Dashboard frontend
+
+Each service opens in its own integrated terminal panel.
+
+---
+
+# 2B. Run with Docker (Deployment Mode)
+
+Launch the complete platform stack.
 
 ```bash
 npm run docker:up
 ```
 
-Wait for all services to be healthy, then open http://localhost.
+Wait until all containers report healthy.
 
-## 3. Issue a Gateway Token
+Then open:
 
-```bash
-curl -X POST "http://localhost:8000/v1/auth/token?gateway_uuid=00000000-0000-0000-0000-000000000001"
+```text
+http://localhost
 ```
 
-## 4. Flash Firmware
+---
 
-1. Set `BACKEND_HOST`, `WIFI_STA_SSID`, and `GATEWAY_JWT_TOKEN` in `apps/firmware/include/config.h`
-2. Build and upload:
+# 3. Generate a Gateway Token
+
+Issue an authentication token for firmware provisioning.
+
+```bash
+curl -X POST \
+"http://localhost:8000/v1/auth/token?gateway_uuid=00000000-0000-0000-0000-000000000001"
+```
+
+Store the returned token securely.
+
+---
+
+# 4. Build & Flash Firmware
+
+Configure firmware credentials.
+
+Edit:
+
+```text
+apps/firmware/include/config.h
+```
+
+Update:
+
+```cpp
+BACKEND_HOST
+WIFI_STA_SSID
+GATEWAY_JWT_TOKEN
+```
+
+Build and upload:
 
 ```bash
 cd apps/firmware
+
 pio run -t upload
 ```
 
-## 5. AP Internet Sharing (NAT)
+---
 
-The default firmware env (`esp32-c3-supermini`) captures DNS and policy traffic but **cannot share full home Wi‑Fi internet** until lwIP is rebuilt with NAPT enabled.
+# 5. Enable AP Internet Sharing (NAT)
 
-**One-time NAPT build** (downloads esp-idf; 15–30+ minutes):
+By default, the firmware captures DNS and policy traffic only.
+
+To enable **full Wi-Fi internet forwarding**, rebuild firmware with **lwIP NAPT support**.
+
+This is a one-time build step.
+
+> Initial compilation may take **15–30+ minutes** because PlatformIO downloads and builds ESP-IDF.
 
 ```bash
 cd apps/firmware
-pio run -e esp32-c3-supermini-napt -t upload
+
+pio run \
+-e esp32-c3-supermini-napt \
+-t upload
 ```
 
-After flash, serial heartbeat should show `napt=on` when STA is connected:
+---
 
-```
+## Verify NAT Activation
+
+After flashing, open serial monitor.
+
+Expected output:
+
+```text
 [heartbeat] heap=... sta=up napt=on ap_clients=1
 [wifi] AP internet sharing ON (DNS upstream ...)
 ```
 
-Connect a phone to `EdgeGate-AP`, then open a browser — traffic routes through the ESP32 to your home router.
+When `napt=on` appears:
 
-## 6. Verify End-to-End
+- Connect a phone or client device to `EdgeGate-AP`
+- Open a browser
+- Traffic should route through the ESP32 gateway
 
-1. Connect a device to `EdgeGate-AP` Wi-Fi
-2. Check the Dashboard Overview for active devices
-3. Create a policy in Policy Monitor → Deploy to Gateway
-4. Observe DNS blocks in DNS Explorer
+---
 
-## Local Development (without Docker)
+# 6. Verify End-to-End Operation
 
-**Backend:**
+Validate complete system connectivity.
+
+### Step 1 — Connect Client
+
+Connect a device to:
+
+```text
+EdgeGate-AP
+```
+
+---
+
+### Step 2 — Confirm Device Discovery
+
+Open Dashboard → Overview
+
+Verify:
+
+- Active devices appear
+- Traffic statistics update
+
+---
+
+### Step 3 — Deploy Policies
+
+Navigate:
+
+```text
+Policy Monitor → Deploy to Gateway
+```
+
+Create and publish a policy.
+
+---
+
+### Step 4 — Monitor Enforcement
+
+Open:
+
+```text
+DNS Explorer
+```
+
+Confirm:
+
+- DNS requests appear
+- Blocked domains are enforced
+
+---
+
+# Local Development (Advanced Setup)
+
+Use this mode if running PostgreSQL and Redis locally.
+
+## Backend
 
 ```bash
 cd apps/backend
+
 pip install -e ".[dev]"
-# Start PostgreSQL and Redis locally, set DATABASE_URL and REDIS_URL
+
+# Configure:
+# DATABASE_URL
+# REDIS_URL
+
 alembic upgrade head
-uvicorn app.main:app --reload --port 8000
+
+uvicorn app.main:app \
+--reload \
+--port 8000
 ```
 
-**Dashboard:**
+---
+
+## Dashboard
 
 ```bash
 npm install
+
 npm run dev:dashboard
 ```
 
-Open http://localhost:3000.
+Open:
+
+```text
+http://localhost:3000
+```
+
+---
+
+# Development Workflow Summary
+
+```text
+Clone
+ ↓
+Configure .env
+ ↓
+Start Backend
+ ↓
+Start Dashboard
+ ↓
+Generate Gateway Token
+ ↓
+Flash Firmware
+ ↓
+Connect Device
+ ↓
+Deploy Policies
+ ↓
+Observe Traffic
+```
+
+---
+
+## Need Help?
+
+If services fail to start:
+
+- Verify environment variables
+- Confirm Python and Node versions
+- Check Docker container health
+- Review backend logs
+- Reflash firmware if gateway registration fails
