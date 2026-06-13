@@ -23,7 +23,7 @@ Ensure the following tools are installed before proceeding:
 Clone the project and initialize environment configuration.
 
 ```bash
-git clone <repo-url> EdgeGate
+git clone https://github.com/AsieduDevelopmentHub/edgegate.git EdgeGate
 
 cd EdgeGate
 
