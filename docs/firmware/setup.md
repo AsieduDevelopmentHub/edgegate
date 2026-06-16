@@ -402,7 +402,7 @@ Current automated validation includes:
 After successful provisioning, continue to:
 
 ```text
-docs/data-flow.md
+docs/architecture/data-flow.md
 ```
 
 to understand telemetry, DNS processing, and policy deployment architecture.
