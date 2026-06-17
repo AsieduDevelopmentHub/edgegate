@@ -8,26 +8,30 @@ class DNSForwarder {
 public:
 
 using QueryCallback=
-void (*)(const char*,const IPAddress&,bool*);
-
-bool begin(
-uint16_t port=53
-){
-return dns_.begin(
-port
-);
-}
-
-void setUpstream(
-IPAddress ip
-){
-upstream_=ip;
-}
+void ()(const char,const IPAddress&,bool*);
 
 void setQueryCallback(
 QueryCallback cb
 ){
 cb_=cb;
+}
+
+bool begin(
+uint16_t port=53
+){
+
+return dns_.begin(
+port
+);
+
+}
+
+void setUpstream(
+IPAddress ip
+){
+
+upstream_=ip;
+
 }
 
 void processNext(){
@@ -37,7 +41,11 @@ dns_.parsePacket();
 
 if(
 size<=0
-)return;
+||
+size>512
+){
+return;
+}
 
 IPAddress client=
 dns_.remoteIP();
@@ -52,20 +60,23 @@ packet_,
 );
 
 if(
-len<=0
-)return;
+len<12
+){
+return;
+}
+
+char domain[128]={0};
+
+parse(
+domain,
+len);
 
 bool block=
 false;
 
-char domain[64];
-
-extractDomain(
-domain,
-len
-);
-
-if(cb_){
+if(
+cb_
+){
 
 cb_(
 domain,
@@ -75,9 +86,11 @@ client,
 
 }
 
-if(block){
+if(
+block
+){
 
-replyNX(
+nxdomain(
 client,
 port,
 len
@@ -97,95 +110,7 @@ len
 
 private:
 
-void forward(
-IPAddress client,
-uint16_t port,
-int len
-){
-
-WiFiUDP up;
-
-up.begin(30000);
-
-up.beginPacket(
-upstream_,
-53
-);
-
-up.write(
-packet_,
-len
-);
-
-up.endPacket();
-
-unsigned long t=
-millis();
-
-while(
-millis()-t
-<1200
-){
-
-if(
-up.parsePacket()
-){
-
-int n=
-up.read(
-resp_,
-512
-);
-
-dns_.beginPacket(
-client,
-port
-);
-
-dns_.write(
-resp_,
-n
-);
-
-dns_.endPacket();
-
-break;
-
-}
-
-delay(1);
-
-}
-
-up.stop();
-
-}
-
-void replyNX(
-IPAddress ip,
-uint16_t port,
-int len
-){
-
-packet_[2]|=0x80;
-
-packet_[3]=3;
-
-dns_.beginPacket(
-ip,
-port
-);
-
-dns_.write(
-packet_,
-len
-);
-
-dns_.endPacket();
-
-}
-
-void extractDomain(
+void parse(
 char* out,
 int len
 ){
@@ -214,8 +139,7 @@ out[w++]='.';
 memcpy(
 out+w,
 packet_+p,
-l
-);
+l);
 
 w+=l;
 
@@ -224,6 +148,150 @@ p+=l;
 }
 
 out[w]=0;
+
+}
+
+void forward(
+IPAddress client,
+uint16_t port,
+int len
+){
+
+WiFiUDP up;
+
+up.begin(
+0
+);
+
+IPAddress dns=
+upstream_;
+
+if(
+dns==
+IPAddress(
+0,
+0,
+0,
+0
+)
+){
+
+dns=
+WiFi.dnsIP();
+
+}
+
+if(
+dns==
+IPAddress(
+0,
+0,
+0,
+0
+)
+){
+
+dns=
+IPAddress(
+8,
+8,
+8,
+8
+);
+
+}
+
+up.beginPacket(
+dns,
+53
+);
+
+up.write(
+packet_,
+len
+);
+
+up.endPacket();
+
+unsigned long t=
+millis();
+
+while(
+millis()-t
+<
+1500
+){
+
+int s=
+up.parsePacket();
+
+if(
+s>0
+){
+
+int n=
+up.read(
+resp_,
+512
+);
+
+dns_.beginPacket(
+client,
+port
+);
+
+dns_.write(
+resp_,
+n
+);
+
+dns_.endPacket();
+
+break;
+
+}
+
+delay(
+2
+);
+
+}
+
+up.stop();
+
+}
+
+void nxdomain(
+IPAddress client,
+uint16_t port,
+int len
+){
+
+memcpy(
+resp_,
+packet_,
+len
+);
+
+resp_[2]|=
+0x80;
+
+resp_[3]=
+(resp_[3]&0xF0)
+|
+3;
+
+dns_.beginPacket(
+client,
+port
+);
+
+dns_.write(
+resp_,
+len
+);
+
+dns_.endPacket();
 
 }
 
