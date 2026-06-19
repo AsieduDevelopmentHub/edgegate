@@ -10,7 +10,7 @@ Built to deliver **low-latency network insight**, **device observability**, and 
 
 <br>
 
-[![License](https://img.shields.io/github/license/AsieduDevelopmentHub/EdgeGate?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](#license)
+[![License](https://img.shields.io/github/license/AsieduDevelopmentHub/edgegate?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](#license)
 [![Platform](https://img.shields.io/badge/Platform-ESP32--C3-00979D?style=for-the-badge&logo=espressif&logoColor=white)](#)
 [![Backend](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](#)
 [![Frontend](https://img.shields.io/badge/Frontend-Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](#)
