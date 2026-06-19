@@ -340,13 +340,3 @@ Built for modern edge networking and intelligent gateway infrastructure.
 </div>
 
 ---
-
-<div align="center">
-
-### EdgeGate
-
-**Observe • Enforce • Analyze**
-
-Built for modern edge networking and intelligent gateway infrastructure.
-
-</div>
