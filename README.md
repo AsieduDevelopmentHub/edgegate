@@ -1,53 +1,121 @@
+<div align="center">
+
 # EdgeGate
 
-High-performance network observation and policy gateway built on ESP32-C3, designed for device visibility, DNS-aware policy enforcement, session intelligence, and real-time telemetry.
+### High-Performance Edge Network Observation & Policy Gateway
 
-EdgeGate combines embedded systems engineering with modern backend infrastructure to provide a lightweight edge gateway capable of observing network behavior and delivering actionable insights through a centralized control plane.
+Intelligent network visibility, DNS-aware policy enforcement, real-time telemetry, and edge analytics powered by **ESP32-C3**, **FastAPI**, and **Next.js**.
+
+Built to deliver **low-latency network insight**, **device observability**, and **policy-driven control** through a centralized management plane.
+
+<br>
+
+[![License](https://img.shields.io/github/license/YOUR_USERNAME/EdgeGate?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](#license)
+[![Platform](https://img.shields.io/badge/Platform-ESP32--C3-00979D?style=for-the-badge&logo=espressif&logoColor=white)](#)
+[![Backend](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](#)
+[![Frontend](https://img.shields.io/badge/Frontend-Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](#)
+[![Database](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](#)
+[![Cache](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)](#)
+[![Docker](https://img.shields.io/badge/Container-Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](#)
+
+</div>
+
+---
+
+## Overview
+
+EdgeGate is a **high-performance edge networking platform** built for monitoring, telemetry collection, policy enforcement, and real-time visibility at the gateway layer.
+
+The system combines **embedded systems engineering**, **modern backend architecture**, and **real-time web technologies** to create a lightweight yet scalable control plane for intelligent network management.
+
+---
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Technology Stack](#technology-stack)
+- [Documentation](#documentation)
+- [Getting Started](#getting-started)
+- [Development Workflow](#development-workflow)
+- [Repository Structure](#repository-structure)
+- [Design Principles](#design-principles)
+- [Core Capabilities](#core-capabilities)
+- [License](#license)
 
 ---
 
 ## Architecture
 
-EdgeGate is organized as a monorepo containing three primary system components.
+EdgeGate is organized as a monorepo containing three core platform layers.
 
 ### Firmware (`apps/firmware`)
 
-ESP32-C3 SuperMini edge gateway responsible for:
+Embedded runtime running on **ESP32-C3 SuperMini**.
 
-- Wi-Fi access point and gateway operation
+**Responsibilities**
+
+- Wi-Fi access point and gateway services
 - Device session lifecycle tracking
-- DNS observation and policy evaluation
-- Telemetry collection and event batching
-- Secure communication with backend services
+- DNS interception and policy evaluation
+- Event buffering and telemetry batching
+- Secure backend communication
+- Edge decision execution
+
+---
 
 ### Backend (`apps/backend`)
 
-FastAPI-based control plane responsible for:
+Control plane built with **FastAPI**.
+
+**Responsibilities**
 
 - Gateway management
 - Telemetry ingestion
 - Policy orchestration
 - Session analytics
+- Event processing
 - PostgreSQL persistence
-- Redis-powered caching and realtime coordination
+- Redis-powered coordination
+
+---
 
 ### Dashboard (`apps/dashboard`)
 
-Next.js monitoring interface providing:
+Real-time management interface built with **Next.js**.
 
-- Real-time gateway visibility
-- Device and session monitoring
+**Responsibilities**
+
+- Live gateway monitoring
+- Device and session visibility
 - Policy management
 - Historical analytics
-- WebSocket-powered live updates
+- WebSocket realtime updates
+
+---
+
+## Technology Stack
+
+<div align="center">
+
+| Layer | Technologies |
+|---|---|
+| Firmware | PlatformIO · ESP32-C3 · Arduino |
+| Backend | Python · FastAPI · SQLAlchemy |
+| Frontend | Next.js · TypeScript |
+| Database | PostgreSQL |
+| Cache | Redis |
+| Infrastructure | Docker · NGINX |
+| Communication | REST · WebSocket |
+
+</div>
 
 ---
 
 ## Documentation
 
-Project documentation is organized into conceptual, architectural, and implementation guides.
+Project documentation is organized into architecture, development, and deployment guides.
 
-| Topic | Path |
+| Document | Location |
 |---|---|
 | Project Overview | `docs/init/about.md` |
 | Technical Specification | `docs/init/overview.md` |
@@ -62,80 +130,100 @@ Project documentation is organized into conceptual, architectural, and implement
 
 ## Getting Started
 
-### 1. Configure Environment
+### 1. Clone Repository
+
+```bash
+git clone <repo-url>
+cd EdgeGate
+```
+
+---
+
+### 2. Configure Environment
 
 ```bash
 cp .env.example .env
 ```
 
-Update configuration values:
+Configure:
 
-- Database credentials
-- Redis connection
-- Backend secrets
-- Gateway configuration
-- Development environment settings
+```text
+DATABASE_URL
+REDIS_URL
+SECRET_KEY
+GATEWAY_JWT_SECRET
+BACKEND_URL
+```
 
 ---
 
-### 2. Run Development Environment
+### 3. Start Development Environment
 
-#### Using Cursor Tasks
+#### Cursor Task Runner (Recommended)
 
-Open the Command Palette:
-
-```
+```text
 Ctrl + Shift + P
+→ Tasks: Run Task
+→ EdgeGate: Dev Stack
 ```
 
-Run:
-
-```
-Tasks: Run Task → EdgeGate: Dev Stack
-```
+---
 
 #### Manual Startup
 
-**Backend:**
+Backend:
 
 ```bash
 cd apps/backend
+
 set PYTHONPATH=.
-python -m uvicorn app.main:app --reload --port 8000
+
+python -m uvicorn app.main:app \
+--reload \
+--port 8000
 ```
 
-**Dashboard:**
+Dashboard:
 
 ```bash
 cd apps/dashboard
+
 npm install
+
 npm run dev
 ```
 
 ---
 
-### 3. Run with Docker
+### 4. Run Using Docker
 
 ```bash
 npm run docker:up
 ```
 
-| Service | Endpoint |
+Available services:
+
+| Service | URL |
 |---|---|
-| Dashboard | http://localhost |
-| API | http://localhost/api |
-| WebSocket | ws://localhost/ws |
+| Dashboard | `http://localhost` |
+| API | `http://localhost/api` |
+| WebSocket | `ws://localhost/ws` |
 
 ---
 
-### 4. Flash Firmware
+### 5. Flash Firmware
 
 ```bash
 cd apps/firmware
+
 pio run -t upload
 ```
 
-Additional firmware instructions: [`docs/firmware/setup.md`](docs/firmware/setup.md)
+See:
+
+```text
+docs/firmware/setup.md
+```
 
 ---
 
@@ -145,16 +233,25 @@ Additional firmware instructions: [`docs/firmware/setup.md`](docs/firmware/setup
 
 ```bash
 cd apps/backend
+
 pip install -e ".[dev]"
+
 alembic upgrade head
-uvicorn app.main:app --reload --port 8000
+
+uvicorn app.main:app \
+--reload \
+--port 8000
 ```
+
+---
 
 ### Dashboard
 
 ```bash
 cd apps/dashboard
+
 npm install
+
 npm run dev:dashboard
 ```
 
@@ -162,58 +259,80 @@ npm run dev:dashboard
 
 ## Repository Structure
 
-```
+```text
+EdgeGate/
+
 apps/
-├── firmware/      PlatformIO firmware for ESP32-C3 gateway
-├── backend/       FastAPI control plane
-└── dashboard/     Next.js monitoring interface
+├── firmware/
+├── backend/
+└── dashboard/
 
 packages/
-├── shared/        Shared domain models and contracts
-├── api/           API client and route definitions
-└── telemetry/     Event schemas and telemetry contracts
+├── shared/
+├── api/
+└── telemetry/
 
 infra/
-├── docker/        Container infrastructure and reverse proxy
-└── postgres/      Database initialization and provisioning
+├── docker/
+└── postgres/
 
 tests/
-├── integration/   Cross-service integration testing
-└── performance/   Performance and load testing
+├── integration/
+└── performance/
 
 docs/
-└── Project documentation
+└── project documentation
 ```
 
 ---
 
 ## Design Principles
 
-EdgeGate is built around the following principles:
+EdgeGate is designed around:
 
+- Edge-first processing
 - Event-driven telemetry
-- Low-latency decision paths
-- Lightweight edge processing
-- Deterministic system behavior
-- Separation of data and control planes
-- Scalable backend architecture
+- Low-latency policy evaluation
+- Deterministic runtime behavior
+- Separation of control and data planes
 - Observable infrastructure
+- Scalable backend services
 - Production-grade maintainability
 
 ---
 
 ## Core Capabilities
 
-- Device session tracking
-- DNS request observation
-- Lightweight policy enforcement
-- Telemetry aggregation
-- Historical analytics
-- Gateway orchestration
-- Realtime dashboard monitoring
+| Capability | Description |
+|---|---|
+| Device Tracking | Gateway device lifecycle |
+| DNS Observation | DNS visibility and logging |
+| Policy Enforcement | Runtime filtering |
+| Telemetry | Event aggregation |
+| Analytics | Historical insights |
+| Gateway Control | Central orchestration |
+| Realtime Monitoring | Live dashboard updates |
 
 ---
 
 ## License
 
-Distributed under the MIT License. See [`LICENSE`](LICENSE) for additional information.
+Licensed under the **MIT License**.
+
+See:
+
+```text
+LICENSE
+```
+
+---
+
+<div align="center">
+
+### EdgeGate
+
+**Observe • Enforce • Analyze**
+
+Built for modern edge networking and intelligent gateway infrastructure.
+
+</div>
