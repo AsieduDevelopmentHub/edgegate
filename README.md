@@ -133,8 +133,8 @@ Project documentation is organized into architecture, development, and deploymen
 ### 1. Clone Repository
 
 ```bash
-git clone <repo-url>
-cd EdgeGate
+git clone https://github.com/AsieduDevelopmentHub/edgegate
+cd edgegate
 ```
 
 ---
