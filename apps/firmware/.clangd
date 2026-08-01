@@ -1,0 +1,16 @@
+# ESP32/PlatformIO uses GCC flags that host clangd rejects as "Unknown argument".
+# These are IDE noise, not firmware compile errors. Trust `pio run` for real builds.
+CompileFlags:
+  Remove:
+    - -fno-tree-switch-conversion
+    - -fstrict-volatile-bitfields
+    - -fno-jump-tables
+    - -freorder-blocks
+    - -mlongcalls
+    - -mdisable-hardware-atomics
+    - -fstack-protector
+  Add:
+    - -Wno-unknown-warning-option
+Diagnostics:
+  Suppress:
+    - drv_unknown_argument

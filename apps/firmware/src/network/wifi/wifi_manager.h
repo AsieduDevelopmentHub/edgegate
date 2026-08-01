@@ -2,428 +2,154 @@
 
 #include <WiFi.h>
 #include <esp_netif.h>
-
 #include "config.h"
 #include "../dns/dns_forwarder.h"
 
 #if EDGEGATE_AP_INTERNET
 extern "C" {
 #include "lwip/lwip_napt.h"
-#include "lwip/netif.h"
 }
 #endif
 
 class WiFiManager {
 public:
+    using ClientCallback = void (*)(const char* mac, bool connected);
+    using DnsQueryCallback = void (*)(const char* domain, const IPAddress& client, bool* block);
 
-using ClientCallback =
-void ()(const char, bool);
+    void setClientCallback(ClientCallback cb) { client_cb_ = cb; }
+    void setDnsQueryCallback(DnsQueryCallback cb) { dns_forwarder_.setQueryCallback(cb); }
 
-using DnsQueryCallback =
-void ()(const char, const IPAddress&, bool*);
+    bool begin() {
+        WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) {
+            this->onEvent(event, info);
+        });
 
-void setClientCallback(ClientCallback cb){
-client_cb_=cb;
-}
+        WiFi.mode(WIFI_AP);
+        IPAddress ap_ip(192, 168, 4, 1);
+        IPAddress lease_start(192, 168, 4, 2);
+        WiFi.softAPConfig(ap_ip, ap_ip, IPAddress(255, 255, 255, 0), lease_start);
+        configureApDns(ap_ip);
 
-void setDnsQueryCallback(
-DnsQueryCallback cb
-){
-dns_.setQueryCallback(cb);
-}
+        if (!WiFi.softAP(WIFI_AP_SSID, WIFI_AP_PASSWORD, 1, 0, 4)) {
+            return false;
+        }
 
-bool begin(){
+        if (!dns_forwarder_.begin(53)) {
+            Serial.println("[wifi] DNS forwarder failed to bind :53");
+            return false;
+        }
 
-WiFi.onEvent(
-[this](
-WiFiEvent_t e,
-WiFiEventInfo_t i
-){
-onEvent(e,i);
-}
-);
+        sta_started_ = false;
+        internet_enabled_ = false;
 
-WiFi.mode(
-WIFI_AP
-);
+        if (strstr(WIFI_STA_SSID, "5G") || strstr(WIFI_STA_SSID, "5g")) {
+            Serial.println("[wifi] WARNING: STA SSID looks like 5 GHz ?????? ESP32-C3 only supports 2.4 GHz");
+        }
 
-IPAddress ap(
-192,
-168,
-4,
-1
-);
+        return true;
+    }
 
-WiFi.softAPConfig(
-ap,
-ap,
-IPAddress(
-255,
-255,
-255,
-0
-)
-);
+    void tickSta() {
+        if (strlen(WIFI_STA_SSID) == 0) return;
 
-if(
-!WiFi.softAP(
-WIFI_AP_SSID,
-WIFI_AP_PASSWORD,
-1,
-0,
-8
-)
-){
-return false;
-}
+        if (!sta_started_) {
+            Serial.printf("[wifi] STA connecting to %s ...\n", WIFI_STA_SSID);
+            WiFi.mode(WIFI_AP_STA);
+            WiFi.begin(WIFI_STA_SSID, WIFI_STA_PASSWORD);
+            sta_started_ = true;
+            sta_start_ms_ = millis();
+        } else if (!staConnected() && millis() - sta_start_ms_ > 30000) {
+            Serial.println("[wifi] STA timeout, retrying...");
+            WiFi.disconnect(true);
+            WiFi.begin(WIFI_STA_SSID, WIFI_STA_PASSWORD);
+            sta_start_ms_ = millis();
+            internet_enabled_ = false;
+        }
+    }
 
-if(
-!dns_.begin(
-53
-)
-){
-return false;
-}
+    void processDNS() {
+        dns_forwarder_.processNext();
+    }
 
-sta_started_=false;
-
-internet_=false;
-
-return true;
-
-}
-
-void tickSta(){
-
-if(
-strlen(
-WIFI_STA_SSID
-)==0
-){
-return;
-}
-
-if(
-!sta_started_
-){
-
-WiFi.mode(
-WIFI_AP_STA
-);
-
-WiFi.begin(
-WIFI_STA_SSID,
-WIFI_STA_PASSWORD
-);
-
-sta_started_=true;
-
-sta_ms_=millis();
-
-Serial.printf(
-"[wifi] connecting %s\n",
-WIFI_STA_SSID
-);
-
-}
-else if(
-!staConnected()
-&&
-millis()-sta_ms_
-
-«»
-
-30000
-){
-
-WiFi.disconnect(
-true
-);
-
-delay(
-500
-);
-
-WiFi.begin(
-WIFI_STA_SSID,
-WIFI_STA_PASSWORD
-);
-
-sta_ms_=
-millis();
-
-internet_=
-false;
-
-Serial.println(
-"[wifi] retry"
-);
-
-}
-
-}
-
-void processDNS(){
-
-dns_.processNext();
-
-}
-
-bool staConnected() const{
-
-return
-WiFi.status()
-
-WL_CONNECTED;
-
-}
-
-bool internetSharingEnabled() const{
-
-return internet_;
-
-}
-
-IPAddress apIP() const{
-
-return WiFi.softAPIP();
-
-}
+    IPAddress apIP() const { return WiFi.softAPIP(); }
+    bool staConnected() const { return WiFi.status() == WL_CONNECTED; }
+    bool internetSharingEnabled() const { return internet_enabled_; }
 
 private:
+    static void configureApDns(IPAddress ap_ip) {
+        esp_netif_t* netif = esp_netif_get_handle_from_ifkey("WIFI_AP_DEF");
+        if (!netif) return;
 
+        esp_netif_dns_info_t dns = {};
+        dns.ip.type = ESP_IPADDR_TYPE_V4;
+        dns.ip.u_addr.ip4.addr = static_cast<uint32_t>(ap_ip);
+
+        esp_netif_dhcps_stop(netif);
+        esp_netif_dhcps_option(
+            netif,
+            ESP_NETIF_OP_SET,
+            ESP_NETIF_DOMAIN_NAME_SERVER,
+            &dns.ip.u_addr.ip4,
+            sizeof(dns.ip.u_addr.ip4));
+        esp_netif_dhcps_start(netif);
+    }
+
+    void enableInternetSharing() {
 #if EDGEGATE_AP_INTERNET
+        if (internet_enabled_ || !staConnected()) return;
 
-bool enableNapt(){
+        dns_forwarder_.setUpstream(WiFi.dnsIP());
 
-#if defined(EDGEGATE_NAPT_LIB)
-
-if(
-WiFi.AP.enableNAPT(
-true
-)
-){
-
-Serial.println(
-"[wifi] NAPT via API"
-);
-
-return true;
-
-}
-
+        IPAddress ap = WiFi.softAPIP();
+        ip_napt_enable(static_cast<uint32_t>(ap), 1);
+        internet_enabled_ = true;
+        Serial.println("[wifi] AP internet sharing ON (NAPT + DNS forward)");
+#else
+        Serial.println("[wifi] AP internet sharing disabled at build time");
 #endif
+    }
 
-IPAddress ap=
-WiFi.softAPIP();
-
-ip_napt_enable(
-(uint32_t)ap,
-1
-);
-
-delay(
-100
-);
-
-for(
-struct netif* n=
-netif_list;
-n;
-n=n->next
-){
-
-if(
-n->name[0]=='a'
-&&
-n->name[1]=='p'
-&&
-n->napt
-){
-
-Serial.println(
-"[wifi] NAPT active"
-);
-
-return true;
-
-}
-
-}
-
-Serial.println(
-"[wifi] NAPT failed"
-);
-
-return false;
-
-}
-
-void disableNapt(){
-
-#if defined(
-EDGEGATE_NAPT_LIB
-)
-
-WiFi.AP.enableNAPT(
-false
-);
-
-#endif
-
-IPAddress ap=
-WiFi.softAPIP();
-
-ip_napt_enable(
-(uint32_t)ap,
-0
-);
-
-}
-
-#endif
-
-void enableInternet(){
-
+    void disableInternetSharing() {
 #if EDGEGATE_AP_INTERNET
-
-if(
-internet_
-||
-!staConnected()
-){
-return;
-}
-
-IPAddress dns=
-WiFi.dnsIP();
-
-if(
-dns==
-IPAddress(
-0,
-0,
-0,
-0
-)
-){
-
-dns=
-IPAddress(
-8,
-8,
-8,
-8
-);
-
-}
-
-dns_.setUpstream(
-dns
-);
-
-if(
-enableNapt()
-){
-
-internet_=true;
-
-Serial.printf(
-"[wifi] internet ON dns=%s\n",
-dns.toString().c_str()
-);
-
-}
-
+        if (!internet_enabled_) return;
+        IPAddress ap = WiFi.softAPIP();
+        ip_napt_enable(static_cast<uint32_t>(ap), 0);
+        internet_enabled_ = false;
 #endif
+    }
 
-}
+    void onEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
+        if (event == ARDUINO_EVENT_WIFI_AP_STACONNECTED) {
+            char mac[18];
+            formatMac(info.wifi_ap_staconnected.mac, mac);
+            Serial.printf("[wifi] AP client + %s\n", mac);
+            if (client_cb_) client_cb_(mac, true);
+        } else if (event == ARDUINO_EVENT_WIFI_AP_STADISCONNECTED) {
+            char mac[18];
+            formatMac(info.wifi_ap_stadisconnected.mac, mac);
+            Serial.printf("[wifi] AP client - %s\n", mac);
+            if (client_cb_) client_cb_(mac, false);
+        } else if (event == ARDUINO_EVENT_WIFI_STA_GOT_IP) {
+            Serial.printf("[wifi] STA up IP=%s ?????? telemetry can reach %s:%d\n",
+                WiFi.localIP().toString().c_str(), BACKEND_HOST, BACKEND_PORT);
+            enableInternetSharing();
+        } else if (event == ARDUINO_EVENT_WIFI_STA_DISCONNECTED) {
+            disableInternetSharing();
+            Serial.printf("[wifi] STA down reason=%d\n", info.wifi_sta_disconnected.reason);
+            if (info.wifi_sta_disconnected.reason == WIFI_REASON_NO_AP_FOUND) {
+                Serial.println("[wifi] Hint: use a 2.4 GHz network name/password");
+            }
+        }
+    }
 
-void disableInternet(){
+    static void formatMac(const uint8_t* raw, char* out) {
+        snprintf(out, 18, "%02X:%02X:%02X:%02X:%02X:%02X",
+            raw[0], raw[1], raw[2], raw[3], raw[4], raw[5]);
+    }
 
-#if EDGEGATE_AP_INTERNET
-
-disableNapt();
-
-internet_=false;
-
-#endif
-
-}
-
-void onEvent(
-WiFiEvent_t e,
-WiFiEventInfo_t info
-){
-
-if(
-e==
-ARDUINO_EVENT_WIFI_STA_GOT_IP
-){
-
-Serial.printf(
-"[wifi] STA up %s\n",
-WiFi.localIP().toString().c_str()
-);
-
-enableInternet();
-
-}
-
-else if(
-e==
-ARDUINO_EVENT_WIFI_STA_DISCONNECTED
-){
-
-disableInternet();
-
-Serial.printf(
-"[wifi] STA down %d\n",
-info.wifi_sta_disconnected.reason
-);
-
-}
-
-else if(
-e==
-ARDUINO_EVENT_WIFI_AP_STACONNECTED
-){
-
-char mac[18];
-
-snprintf(
-mac,
-18,
-"%02X:%02X:%02X:%02X:%02X:%02X",
-info.wifi_ap_staconnected.mac[0],
-info.wifi_ap_staconnected.mac[1],
-info.wifi_ap_staconnected.mac[2],
-info.wifi_ap_staconnected.mac[3],
-info.wifi_ap_staconnected.mac[4],
-info.wifi_ap_staconnected.mac[5]
-);
-
-if(
-client_cb_
-){
-client_cb_(
-mac,
-true
-);
-}
-
-}
-
-}
-
-DNSForwarder dns_;
-
-ClientCallback client_cb_=nullptr;
-
-bool sta_started_=false;
-
-bool internet_=false;
-
-unsigned long sta_ms_=0;
-
+    DNSForwarder dns_forwarder_;
+    ClientCallback client_cb_ = nullptr;
+    bool sta_started_ = false;
+    bool internet_enabled_ = false;
+    unsigned long sta_start_ms_ = 0;
 };

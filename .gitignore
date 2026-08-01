@@ -24,10 +24,12 @@ apps/firmware/include/secrets.h
 .pio/
 .pioenvs/
 .piolibdeps/
+apps/firmware/compile_commands.json
+apps/firmware/firmware.log
 
 # IDE
 .idea/
-.vscode/
+# .vscode/
 *.swp
 *.swo
 
