@@ -8,6 +8,7 @@
 #if EDGEGATE_AP_INTERNET
 extern "C" {
 #include "lwip/lwip_napt.h"
+#include "lwip/netif.h"
 }
 #endif
 
@@ -26,13 +27,14 @@ public:
 
         WiFi.mode(WIFI_AP);
         IPAddress ap_ip(192, 168, 4, 1);
-        IPAddress lease_start(192, 168, 4, 2);
-        WiFi.softAPConfig(ap_ip, ap_ip, IPAddress(255, 255, 255, 0), lease_start);
-        configureApDns(ap_ip);
+        WiFi.softAPConfig(ap_ip, ap_ip, IPAddress(255, 255, 255, 0));
 
         if (!WiFi.softAP(WIFI_AP_SSID, WIFI_AP_PASSWORD, 1, 0, 4)) {
             return false;
         }
+
+        // DHCP DNS must be set after the AP interface exists.
+        configureApDns(ap_ip);
 
         if (!dns_forwarder_.begin(53)) {
             Serial.println("[wifi] DNS forwarder failed to bind :53");
@@ -43,7 +45,7 @@ public:
         internet_enabled_ = false;
 
         if (strstr(WIFI_STA_SSID, "5G") || strstr(WIFI_STA_SSID, "5g")) {
-            Serial.println("[wifi] WARNING: STA SSID looks like 5 GHz ?????? ESP32-C3 only supports 2.4 GHz");
+            Serial.println("[wifi] WARNING: STA SSID looks like 5 GHz - ESP32-C3 only supports 2.4 GHz");
         }
 
         return true;
@@ -61,6 +63,7 @@ public:
         } else if (!staConnected() && millis() - sta_start_ms_ > 30000) {
             Serial.println("[wifi] STA timeout, retrying...");
             WiFi.disconnect(true);
+            delay(200);
             WiFi.begin(WIFI_STA_SSID, WIFI_STA_PASSWORD);
             sta_start_ms_ = millis();
             internet_enabled_ = false;
@@ -78,13 +81,18 @@ public:
 private:
     static void configureApDns(IPAddress ap_ip) {
         esp_netif_t* netif = esp_netif_get_handle_from_ifkey("WIFI_AP_DEF");
-        if (!netif) return;
+        if (!netif) {
+            Serial.println("[wifi] AP netif missing - DHCP DNS not set");
+            return;
+        }
 
         esp_netif_dns_info_t dns = {};
         dns.ip.type = ESP_IPADDR_TYPE_V4;
         dns.ip.u_addr.ip4.addr = static_cast<uint32_t>(ap_ip);
 
+        // Make the AP advertise itself as DNS so clients hit our forwarder on :53.
         esp_netif_dhcps_stop(netif);
+        esp_netif_set_dns_info(netif, ESP_NETIF_DNS_MAIN, &dns);
         esp_netif_dhcps_option(
             netif,
             ESP_NETIF_OP_SET,
@@ -92,18 +100,61 @@ private:
             &dns.ip.u_addr.ip4,
             sizeof(dns.ip.u_addr.ip4));
         esp_netif_dhcps_start(netif);
+        Serial.printf("[wifi] AP DHCP DNS -> %s\n", ap_ip.toString().c_str());
     }
+
+#if EDGEGATE_AP_INTERNET
+    bool enableNapt() {
+#if defined(EDGEGATE_NAPT_LIB) && defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR >= 3)
+        if (WiFi.AP.enableNAPT(true)) {
+            Serial.println("[wifi] NAPT via WiFi.AP.enableNAPT");
+            return true;
+        }
+#endif
+        IPAddress ap = WiFi.softAPIP();
+        ip_napt_enable(static_cast<uint32_t>(ap), 1);
+        delay(50);
+
+#if defined(IP_NAPT) && IP_NAPT
+        for (struct netif* n = netif_list; n; n = n->next) {
+            if (n->name[0] == 'a' && n->name[1] == 'p' && n->napt) {
+                Serial.println("[wifi] NAPT active on AP netif");
+                return true;
+            }
+        }
+#endif
+
+        Serial.println("[wifi] NAPT FAILED - lwIP was built without IP_NAPT");
+        Serial.println("[wifi] Use: pio run -e esp32-c3-supermini-napt -t upload");
+        return false;
+    }
+
+    void disableNapt() {
+#if defined(EDGEGATE_NAPT_LIB) && defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR >= 3)
+        WiFi.AP.enableNAPT(false);
+#endif
+        IPAddress ap = WiFi.softAPIP();
+        ip_napt_enable(static_cast<uint32_t>(ap), 0);
+    }
+#endif
 
     void enableInternetSharing() {
 #if EDGEGATE_AP_INTERNET
         if (internet_enabled_ || !staConnected()) return;
 
-        dns_forwarder_.setUpstream(WiFi.dnsIP());
+        IPAddress dns = WiFi.dnsIP();
+        if (dns == IPAddress(0, 0, 0, 0)) {
+            dns = IPAddress(8, 8, 8, 8);
+        }
+        dns_forwarder_.setUpstream(dns);
 
-        IPAddress ap = WiFi.softAPIP();
-        ip_napt_enable(static_cast<uint32_t>(ap), 1);
+        if (!enableNapt()) {
+            internet_enabled_ = false;
+            return;
+        }
+
         internet_enabled_ = true;
-        Serial.println("[wifi] AP internet sharing ON (NAPT + DNS forward)");
+        Serial.printf("[wifi] AP internet sharing ON (dns upstream %s)\n", dns.toString().c_str());
 #else
         Serial.println("[wifi] AP internet sharing disabled at build time");
 #endif
@@ -112,9 +163,9 @@ private:
     void disableInternetSharing() {
 #if EDGEGATE_AP_INTERNET
         if (!internet_enabled_) return;
-        IPAddress ap = WiFi.softAPIP();
-        ip_napt_enable(static_cast<uint32_t>(ap), 0);
+        disableNapt();
         internet_enabled_ = false;
+        Serial.println("[wifi] AP internet sharing OFF");
 #endif
     }
 
@@ -130,14 +181,16 @@ private:
             Serial.printf("[wifi] AP client - %s\n", mac);
             if (client_cb_) client_cb_(mac, false);
         } else if (event == ARDUINO_EVENT_WIFI_STA_GOT_IP) {
-            Serial.printf("[wifi] STA up IP=%s ?????? telemetry can reach %s:%d\n",
-                WiFi.localIP().toString().c_str(), BACKEND_HOST, BACKEND_PORT);
+            Serial.printf("[wifi] STA up IP=%s gw=%s dns=%s\n",
+                WiFi.localIP().toString().c_str(),
+                WiFi.gatewayIP().toString().c_str(),
+                WiFi.dnsIP().toString().c_str());
             enableInternetSharing();
         } else if (event == ARDUINO_EVENT_WIFI_STA_DISCONNECTED) {
             disableInternetSharing();
             Serial.printf("[wifi] STA down reason=%d\n", info.wifi_sta_disconnected.reason);
             if (info.wifi_sta_disconnected.reason == WIFI_REASON_NO_AP_FOUND) {
-                Serial.println("[wifi] Hint: use a 2.4 GHz network name/password");
+                Serial.println("[wifi] Hint: ESP32-C3 STA needs a 2.4 GHz SSID (not 5 GHz)");
             }
         }
     }

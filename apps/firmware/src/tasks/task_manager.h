@@ -31,7 +31,13 @@ public:
 
     static void createTask(TaskFunction_t fn, const char* name, uint32_t stack,
                            UBaseType_t priority, BaseType_t core) {
+        // ESP32-C3 is single-core — pinning to core 1 asserts and reboot-loops.
+#if CONFIG_FREERTOS_UNICORE
+        (void)core;
+        xTaskCreatePinnedToCore(fn, name, stack, nullptr, priority, nullptr, 0);
+#else
         xTaskCreatePinnedToCore(fn, name, stack, nullptr, priority, nullptr, core);
+#endif
     }
 
 private:

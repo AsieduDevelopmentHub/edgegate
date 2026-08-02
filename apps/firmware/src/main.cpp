@@ -283,13 +283,14 @@ void setup() {
 
     captureEvent(EVT_GATEWAY_HEALTH, nullptr, "{\"status\":\"online\"}", 0);
 
+    // Core ids: on dual-core ESP32, 0/1 split is fine; TaskManager clamps to 0 on C3.
     TaskManager::createTask(wifiTask, "wifi_task", 3072, 5, 0);
-    TaskManager::createTask(authTask, "auth_task", 6144, 4, 1);
+    TaskManager::createTask(authTask, "auth_task", 6144, 4, 0);
     TaskManager::createTask(dnsTask, "dns_task", 3072, 4, 0);
     TaskManager::createTask(policyTask, "policy_task", 6144, 3, 0);
-    TaskManager::createTask(telemetryTask, "telemetry_task", 8192, 3, 1);
-    TaskManager::createTask(storageTask, "storage_task", 2048, 2, 1);
-    TaskManager::createTask(apiTask, "api_task", 2048, 2, 1);
+    TaskManager::createTask(telemetryTask, "telemetry_task", 8192, 3, 0);
+    TaskManager::createTask(storageTask, "storage_task", 2048, 2, 0);
+    TaskManager::createTask(apiTask, "api_task", 2048, 2, 0);
 
     Serial.printf("Tasks started heap=%u\n", ESP.getFreeHeap());
 }

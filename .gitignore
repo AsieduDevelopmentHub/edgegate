@@ -26,6 +26,9 @@ apps/firmware/include/secrets.h
 .piolibdeps/
 apps/firmware/compile_commands.json
 apps/firmware/firmware.log
+apps/firmware/upload-napt.log
+managed_components/
+.dummy/
 
 # IDE
 .idea/
